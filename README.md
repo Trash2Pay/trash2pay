@@ -6,7 +6,7 @@ The platform incentivizes responsible waste disposal using **T2P Units**, a non-
 
 ---
 
-## 🚀 Vision
+##  Vision
 
 To create cleaner cities by making waste disposal:
 - Transparent
@@ -149,4 +149,5 @@ MIT License
 
 Built with a focus on clean cities, fair pay, and real impact.
 
-Follow development updates on X (Twitter).
+Follow development updates on **X (Twitter)**: [@trash2pay](https://x.com/trash2pay).
+

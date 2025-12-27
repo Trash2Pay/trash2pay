@@ -1,0 +1,7 @@
+project_id = "ncgmsgfutgmebdghhvyj"
+
+[functions.handcash-auth]
+verify_jwt = false
+
+[functions.register-user]
+verify_jwt = false

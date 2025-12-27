@@ -1,0 +1,230 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Trash2Cash Eco-Friendly Design System */
+
+@layer base {
+  :root {
+    --background: 120 20% 98%;
+    --foreground: 150 30% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 150 30% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 150 30% 10%;
+
+    --primary: 142 70% 35%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 160 30% 92%;
+    --secondary-foreground: 150 30% 15%;
+
+    --muted: 120 15% 95%;
+    --muted-foreground: 150 15% 40%;
+
+    --accent: 75 80% 45%;
+    --accent-foreground: 150 30% 10%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 140 20% 88%;
+    --input: 140 20% 88%;
+    --ring: 142 70% 35%;
+
+    --radius: 0.75rem;
+
+    /* Custom eco colors */
+    --eco-leaf: 142 70% 35%;
+    --eco-forest: 150 40% 22%;
+    --eco-mint: 160 50% 85%;
+    --eco-lime: 75 80% 45%;
+    --eco-earth: 30 30% 35%;
+    --eco-sky: 195 80% 60%;
+    --eco-gold: 45 90% 55%;
+
+    /* Gradients */
+    --gradient-eco: linear-gradient(135deg, hsl(142 70% 35%) 0%, hsl(160 60% 40%) 50%, hsl(75 80% 45%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(120 20% 98%) 0%, hsl(140 30% 95%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(140 20% 98%) 100%);
+
+    --sidebar-background: 120 20% 98%;
+    --sidebar-foreground: 150 30% 10%;
+    --sidebar-primary: 142 70% 35%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 160 30% 92%;
+    --sidebar-accent-foreground: 150 30% 15%;
+    --sidebar-border: 140 20% 88%;
+    --sidebar-ring: 142 70% 35%;
+  }
+
+  .dark {
+    --background: 150 30% 6%;
+    --foreground: 120 20% 95%;
+
+    --card: 150 25% 10%;
+    --card-foreground: 120 20% 95%;
+
+    --popover: 150 25% 10%;
+    --popover-foreground: 120 20% 95%;
+
+    --primary: 142 60% 45%;
+    --primary-foreground: 150 30% 5%;
+
+    --secondary: 150 20% 15%;
+    --secondary-foreground: 120 20% 90%;
+
+    --muted: 150 20% 12%;
+    --muted-foreground: 140 15% 60%;
+
+    --accent: 75 70% 50%;
+    --accent-foreground: 150 30% 5%;
+
+    --destructive: 0 70% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 150 20% 18%;
+    --input: 150 20% 18%;
+    --ring: 142 60% 45%;
+
+    --eco-leaf: 142 60% 45%;
+    --eco-forest: 150 35% 35%;
+    --eco-mint: 160 30% 25%;
+    --eco-lime: 75 70% 50%;
+    --eco-earth: 30 20% 45%;
+    --eco-sky: 195 70% 50%;
+    --eco-gold: 45 85% 50%;
+
+    --gradient-eco: linear-gradient(135deg, hsl(142 60% 45%) 0%, hsl(160 50% 35%) 50%, hsl(75 70% 50%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(150 30% 6%) 0%, hsl(150 25% 10%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(150 25% 10%) 0%, hsl(150 20% 12%) 100%);
+
+    --sidebar-background: 150 25% 10%;
+    --sidebar-foreground: 120 20% 95%;
+    --sidebar-primary: 142 60% 45%;
+    --sidebar-primary-foreground: 150 30% 5%;
+    --sidebar-accent: 150 20% 15%;
+    --sidebar-accent-foreground: 120 20% 90%;
+    --sidebar-border: 150 20% 18%;
+    --sidebar-ring: 142 60% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+}
+
+@layer utilities {
+  .gradient-eco {
+    background: var(--gradient-eco);
+  }
+  
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+  
+  .gradient-card {
+    background: var(--gradient-card);
+  }
+
+  .text-gradient-eco {
+    background: var(--gradient-eco);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .glass {
+    @apply bg-card/80 backdrop-blur-lg border border-border/50;
+  }
+
+  .eco-glow {
+    box-shadow: 0 0 40px -10px hsl(var(--primary) / 0.3);
+  }
+
+  .eco-shadow {
+    box-shadow: 0 20px 40px -15px hsl(var(--eco-forest) / 0.15);
+  }
+}
+
+@layer components {
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse-slow 4s ease-in-out infinite;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.6s ease-out forwards;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.4s ease-out forwards;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

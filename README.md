@@ -1,36 +1,152 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Trash2Pay ♻️
 
-## Getting Started
+Trash2Pay is a decentralized waste management platform that connects households, businesses, and waste collectors through **verifiable waste pickup records** and **instant micro-payments** powered by Bitcoin SV (BSV).
 
-First, run the development server:
+The platform incentivizes responsible waste disposal using **T2P Units**, a non-speculative utility unit earned through verified waste collection activities.
 
-```bash
+---
+
+## 🚀 Vision
+
+To create cleaner cities by making waste disposal:
+- Transparent
+- Verifiable
+- Fairly compensated
+- Data-driven
+
+Trash2Pay turns waste into value through proof-based payments.
+
+---
+
+## 🧩 Key Features
+
+- **Pay-per-pickup model** using satoshi-based micro-payments
+- **Proof-of-Waste Collection (PoWC)** with verifiable records
+- **T2P Units** earned for responsible waste disposal
+- **Decentralized collector marketplace**
+- **Reputation system** for collectors
+- **Audit-ready data** for estates, NGOs, and municipalities
+
+---
+
+## 🏗️ Tech Stack
+
+### Frontend
+- **Next.js**
+- **TypeScript**
+- **Vite**
+- **Tailwind CSS**
+- **shadcn/ui**
+
+### Backend & Infrastructure
+- **Supabase** (Auth, Database, Storage)
+- **PostgreSQL**
+
+### Blockchain Layer (Planned)
+- **Bitcoin SV (BSV)**
+- **sCrypt smart contracts**
+- **Micro-payments using satoshis**
+- **T2P Units (utility units)**
+
+---
+
+## 🔐 Platform Token: T2P Units
+
+T2P Units are **utility units**, not a speculative token.
+
+They are earned through:
+- Verified waste pickups
+- Proper waste sorting
+- Community cleanup participation
+
+T2P Units can be redeemed for:
+- Discounted pickups
+- Platform services
+- Partner incentives
+
+---
+
+## 📦 Project Structure
+
+```text
+trash2pay/
+├── app/                # Next.js app router
+├── components/         # UI components
+├── lib/                # Utilities and helpers
+├── styles/             # Global styles
+├── public/             # Static assets
+├── supabase/           # Supabase config
+├── .gitignore
+├── README.md
+└── package.json
+
+⚙️ Getting Started (Local Development)
+1. Clone the Repository
+git clone https://github.com/your-username/trash2pay.git
+cd trash2pay
+
+2. Install Dependencies
+npm install
+
+3. Environment Variables
+
+Create a .env.local file:
+
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+4. Run the App
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+App will be available at:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+http://localhost:3000
 
-## Learn More
+🛣️ Roadmap
 
-To learn more about Next.js, take a look at the following resources:
+ User & collector onboarding
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+ Waste pickup request flow
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+ Proof-of-Waste Collection (PoWC)
 
-## Deploy on Vercel
+ Satoshi escrow & payout logic
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+ T2P Units minting & redemption
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+ Collector reputation system
+
+ Municipal analytics dashboard
+
+🌍 Use Cases
+
+Residential estates
+
+Markets and commercial centers
+
+University campuses
+
+NGO-led cleanup programs
+
+Smart city waste initiatives
+
+🤝 Contributing
+
+Contributions are welcome.
+
+Fork the repository
+
+Create a feature branch
+
+Submit a pull request
+
+📄 License
+
+MIT License
+
+📬 Contact
+
+Built with a focus on clean cities, fair pay, and real impact.
+
+Follow development updates on X (Twitter).

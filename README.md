@@ -149,5 +149,6 @@ MIT License
 
 Built with a focus on clean cities, fair pay, and real impact.
 
-Follow development updates on **X (Twitter)**: [@trash2pay](https://x.com/trash2pay).
+Follow development updates on X (Twitter):  
+👉 https://x.com/trash2pay
 

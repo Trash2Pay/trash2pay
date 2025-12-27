@@ -50,7 +50,7 @@ export const WalletGate: React.FC<WalletGateProps> = ({ children, requiredRole }
               <div className="w-8 h-8 rounded-lg gradient-eco flex items-center justify-center">
                 <Leaf className="w-5 h-5 text-primary-foreground" />
               </div>
-              <span className="font-bold text-gradient-eco">Trash2Cash</span>
+              <span className="font-bold text-gradient-eco">Trash2Pay</span>
             </Link>
           </div>
         </div>
@@ -67,7 +67,7 @@ export const WalletGate: React.FC<WalletGateProps> = ({ children, requiredRole }
           </h1>
           
           <p className="text-lg text-muted-foreground mb-8">
-            To use Trash2Cash, you need to connect your BSV wallet. This allows you to receive T2C token rewards for your recycling efforts.
+            To use Trash2Pay, you need to connect your BSV wallet. This allows you to receive T2P token rewards for your waste collection or recycling efforts.
           </p>
 
           <Button

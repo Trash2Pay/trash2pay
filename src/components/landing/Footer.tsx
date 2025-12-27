@@ -93,7 +93,7 @@ const Footer = () => {
         {/* Bottom */}
         <div className="pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            © 2024 Trash2Cash. All rights reserved.
+            © 2025 Trash2Cash. All rights reserved.
           </p>
           <div className="flex gap-6">
             <span className="text-sm text-muted-foreground hover:text-foreground cursor-pointer transition-colors">

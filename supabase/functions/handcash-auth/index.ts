@@ -25,9 +25,12 @@ serve(async (req) => {
     console.log('HandCash auth action:', action);
 
     if (action === 'get-redirect-url') {
-      // Generate HandCash OAuth redirect URL
-      const redirectUrl = `https://app.handcash.io/#/authorizeApp?appId=${appId}`;
-      console.log('Generated redirect URL');
+      // Get the origin from request headers for callback URL
+      const origin = req.headers.get('origin') || 'https://trash2pay.vercel.app/';
+      
+      // Generate HandCash OAuth redirect URL with callback to our app
+      const redirectUrl = `https://app.handcash.io/#/authorizeApp?appId=${appId}&redirectUrl=${encodeURIComponent(origin)}`;
+      console.log('Generated redirect URL with callback to:', origin);
       
       return new Response(
         JSON.stringify({ redirectUrl }),

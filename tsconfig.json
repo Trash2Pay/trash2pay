@@ -10,7 +10,9 @@
       ]
     },
     "skipLibCheck": true,
-    "strictNullChecks": false
+    "strictNullChecks": false,
+    "lib": ["esnext", "dom"],
+    "types": ["deno.ns"]
   },
   "files": [],
   "references": [

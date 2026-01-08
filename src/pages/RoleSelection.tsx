@@ -147,7 +147,7 @@ const RoleSelection = () => {
                 </div>
                 <CardTitle className="text-2xl">Start Earning</CardTitle>
                 <CardDescription className="text-base">
-                  Request pickups and earn T2C tokens for your recyclables
+                  Request pickups and earn T2P tokens for your recyclables
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -158,7 +158,7 @@ const RoleSelection = () => {
                   </div>
                   <div className="flex items-center gap-3 text-sm">
                     <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span>Earn T2C tokens for every successful pickup</span>
+                    <span>Earn T2P tokens for every successful pickup</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm">
                     <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
@@ -201,7 +201,7 @@ const RoleSelection = () => {
                 </div>
                 <CardTitle className="text-2xl">Join as Collector</CardTitle>
                 <CardDescription className="text-base">
-                  Collect waste and earn T2C tokens for your service
+                  Collect waste and earn T2P tokens for your service
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">

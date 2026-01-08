@@ -12,7 +12,7 @@ const Footer = () => {
               <div className="w-10 h-10 rounded-xl gradient-eco flex items-center justify-center">
                 <Leaf className="w-6 h-6 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold text-gradient-eco">Trash2Cash</span>
+              <span className="text-xl font-bold text-gradient-eco">Trash2Pay</span>
             </Link>
             <p className="text-muted-foreground text-sm leading-relaxed">
               Decentralized waste management powered by BSV blockchain. 
@@ -85,7 +85,7 @@ const Footer = () => {
               </a>
             </div>
             <p className="text-muted-foreground text-sm">
-              support@trash2cash.io
+              support@trash2pay.io
             </p>
           </div>
         </div>
@@ -93,7 +93,7 @@ const Footer = () => {
         {/* Bottom */}
         <div className="pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            © 2025 Trash2Cash. All rights reserved.
+            © 2026 Trash2Pay. All rights reserved.
           </p>
           <div className="flex gap-6">
             <span className="text-sm text-muted-foreground hover:text-foreground cursor-pointer transition-colors">

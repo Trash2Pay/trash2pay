@@ -148,13 +148,13 @@ const DashboardContent = () => {
                 <div className="w-8 h-8 rounded-lg gradient-eco flex items-center justify-center">
                   <Leaf className="w-5 h-5 text-primary-foreground" />
                 </div>
-                <span className="font-bold text-gradient-eco">Trash2Cash</span>
+                <span className="font-bold text-gradient-eco">Trash2Pay</span>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-eco-gold/10 border border-eco-gold/20">
                 <Coins className="w-4 h-4 text-eco-gold" />
-                <span className="font-semibold text-eco-gold">245 T2C</span>
+                <span className="font-semibold text-eco-gold">245 T2P</span>
               </div>
               <WalletButton />
             </div>
@@ -180,7 +180,7 @@ const DashboardContent = () => {
                 <TrendingUp className="w-5 h-5 text-primary" />
               </div>
               <div className="text-3xl font-bold mb-1">245</div>
-              <div className="text-sm text-muted-foreground">T2C Tokens</div>
+              <div className="text-sm text-muted-foreground">T2P Tokens</div>
             </CardContent>
           </Card>
 
@@ -344,7 +344,7 @@ const DashboardContent = () => {
               <div className="gradient-eco p-6 text-primary-foreground">
                 <div className="flex items-center gap-2 mb-4">
                   <Coins className="w-6 h-6" />
-                  <span className="font-semibold">T2C Balance</span>
+                  <span className="font-semibold">T2P Balance</span>
                 </div>
                 <div className="text-4xl font-bold mb-1">245.00</div>
                 <div className="text-sm opacity-80">≈ $24.50 USD</div>

@@ -6,8 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const REGISTRATION_FEE_SATOSHIS = 10;
-const PLATFORM_WALLET = 'trash2cash'; // Platform's HandCash handle to receive registration fees
+const REGISTRATION_FEE_SATOSHIS = 100;
+const PLATFORM_WALLET = 'trash2pay'; // Platform's HandCash handle to receive registration fees
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -52,7 +52,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        description: `Trash2Cash Registration Fee - ${role === 'collector' ? 'Collector' : 'User'}`,
+        description: `Trash2Pay Registration Fee - ${role === 'collector' ? 'Collector' : 'User'}`,
         receivers: [
           {
             destination: PLATFORM_WALLET,

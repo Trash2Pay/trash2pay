@@ -29,7 +29,7 @@ const rewardTiers = [
     icon: Trophy,
     name: "Referral Rewards",
     tokens: "25",
-    description: "Tokens for every friend who joins Trash2Cash",
+    description: "Tokens for every friend who joins Trash2Pay",
     color: "border-accent/30 bg-accent/5",
     iconBg: "bg-accent/20 text-accent",
   },

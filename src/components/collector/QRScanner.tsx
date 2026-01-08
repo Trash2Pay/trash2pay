@@ -132,7 +132,7 @@ export const QRScanner = ({ open, onOpenChange, onPickupVerified }: QRScannerPro
 
     toast({
       title: "Pickup Verified! 🎉",
-      description: `${rewardAmount} T2C tokens distributed. User: ${rewardAmount * 0.7} T2C, Collector: ${rewardAmount * 0.3} T2C`,
+      description: `${rewardAmount} T2P Units distributed. User: ${rewardAmount * 0.7} T2P, Collector: ${rewardAmount * 0.3} T2P`,
     });
 
     onPickupVerified?.(scannedData, rewardAmount);
@@ -259,17 +259,17 @@ export const QRScanner = ({ open, onOpenChange, onPickupVerified }: QRScannerPro
                     <span className="text-sm font-medium">Reward Distribution</span>
                     <Badge className="bg-eco-gold/20 text-eco-gold border-eco-gold/30">
                       <Coins className="w-3 h-3 mr-1" />
-                      {rewardAmount} T2C Total
+                      {rewardAmount} T2P Total
                     </Badge>
                   </div>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">User Reward (70%)</span>
-                      <span className="font-medium text-eco-gold">{Math.round(rewardAmount * 0.7)} T2C</span>
+                      <span className="font-medium text-eco-gold">{Math.round(rewardAmount * 0.7)} T2P</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Collector Reward (30%)</span>
-                      <span className="font-medium text-eco-gold">{Math.round(rewardAmount * 0.3)} T2C</span>
+                      <span className="font-medium text-eco-gold">{Math.round(rewardAmount * 0.3)} T2P</span>
                     </div>
                   </div>
                 </div>

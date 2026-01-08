@@ -115,7 +115,7 @@ const CollectorContent = () => {
     setCollectorTokens((prev) => prev + collectorReward);
     toast({
       title: "Pickup Verified! 🎉",
-      description: `You earned ${collectorReward} T2C tokens!`,
+      description: `You earned ${collectorReward} T2P tokens!`,
     });
   };
 
@@ -158,7 +158,7 @@ const CollectorContent = () => {
               </Badge>
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-eco-gold/10 border border-eco-gold/20">
                 <Coins className="w-4 h-4 text-eco-gold" />
-                <span className="font-semibold text-eco-gold">{collectorTokens} T2C</span>
+                <span className="font-semibold text-eco-gold">{collectorTokens} T2P</span>
               </div>
               <WalletButton />
             </div>
@@ -177,7 +177,7 @@ const CollectorContent = () => {
                 </div>
               </div>
               <div className="text-2xl md:text-3xl font-bold">890</div>
-              <div className="text-xs md:text-sm text-muted-foreground">T2C Earned</div>
+              <div className="text-xs md:text-sm text-muted-foreground">T2P Earned</div>
             </CardContent>
           </Card>
 

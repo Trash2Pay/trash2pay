@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const REGISTRATION_FEE = 10; // Satoshis
+const REGISTRATION_FEE = 100; // Satoshis
 
 const RoleSelection = () => {
   const { isConnected, walletProfile, setUserRole, userRole } = useWallet();
@@ -124,7 +124,7 @@ const RoleSelection = () => {
               Welcome, <span className="text-gradient-eco">{walletProfile?.displayName || walletProfile?.handle || 'Eco Warrior'}</span>!
             </h1>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-              Choose how you want to participate in the Trash2Cash ecosystem
+              Choose how you want to participate in the Trash2Pay ecosystem
             </p>
             <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm">
               <Coins className="w-4 h-4" />

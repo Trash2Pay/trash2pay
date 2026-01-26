@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Leaf, Recycle, Truck, ArrowRight, Coins, CheckCircle2, Loader2, ExternalLink } from "lucide-react";
+import { Leaf, Recycle, Truck, ArrowRight, Coins, CheckCircle2, Loader2, ExternalLink, Factory } from "lucide-react";
 import { useWallet } from "@/contexts/WalletContext";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +20,7 @@ const RoleSelection = () => {
   const { isConnected, walletProfile, setUserRole, userRole } = useWallet();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<'user' | 'collector' | null>(null);
+  const [selectedRole, setSelectedRole] = useState<'user' | 'collector' | 'processor' | null>(null);
   const [transactionResult, setTransactionResult] = useState<{
     transactionId: string;
     whatsonchainUrl: string;
@@ -33,6 +33,8 @@ const RoleSelection = () => {
       navigate('/dashboard');
     } else if (userRole === 'collector') {
       navigate('/collector');
+    } else if (userRole === 'processor') {
+      navigate('/processor');
     }
   }, [userRole, navigate]);
 
@@ -43,7 +45,7 @@ const RoleSelection = () => {
     }
   }, [isConnected, navigate]);
 
-  const handleSelectRole = async (role: 'user' | 'collector') => {
+  const handleSelectRole = async (role: 'user' | 'collector' | 'processor') => {
     if (!walletProfile) {
       toast.error('Wallet not connected');
       return;
@@ -63,9 +65,10 @@ const RoleSelection = () => {
 
       const { data, error } = await supabase.functions.invoke('register-user', {
         body: {
-          authToken,
+          authToken: walletProfile.walletType === 'handcash' ? authToken : null,
           role,
           walletHandle: walletProfile.handle,
+          walletType: walletProfile.walletType,
         },
       });
 
@@ -98,8 +101,10 @@ const RoleSelection = () => {
     setShowSuccessDialog(false);
     if (selectedRole === 'user') {
       navigate('/dashboard');
-    } else {
+    } else if (selectedRole === 'collector') {
       navigate('/collector');
+    } else {
+      navigate('/processor');
     }
   };
 
@@ -133,7 +138,7 @@ const RoleSelection = () => {
           </div>
 
           {/* Role Cards */}
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
             {/* User Role */}
             <Card 
               className={`gradient-card border-border/50 cursor-pointer hover:border-primary/50 transition-all hover:scale-[1.02] group ${
@@ -147,7 +152,7 @@ const RoleSelection = () => {
                 </div>
                 <CardTitle className="text-2xl">Start Earning</CardTitle>
                 <CardDescription className="text-base">
-                  Request pickups and earn T2P tokens for your recyclables
+                  Request pickups and earn T2P Units for your recyclables
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -158,7 +163,7 @@ const RoleSelection = () => {
                   </div>
                   <div className="flex items-center gap-3 text-sm">
                     <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span>Earn T2P tokens for every successful pickup</span>
+                    <span>Earn T2P Units for every successful pickup</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm">
                     <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
@@ -201,7 +206,7 @@ const RoleSelection = () => {
                 </div>
                 <CardTitle className="text-2xl">Join as Collector</CardTitle>
                 <CardDescription className="text-base">
-                  Collect waste and earn T2P tokens for your service
+                  Collect waste and earn T2P Units for your service
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -242,6 +247,61 @@ const RoleSelection = () => {
                 </Button>
               </CardContent>
             </Card>
+
+            {/* Processor Role */}
+            <Card 
+              className={`gradient-card border-border/50 cursor-pointer hover:border-eco-sky/50 transition-all hover:scale-[1.02] group ${
+                isProcessing ? 'pointer-events-none opacity-50' : ''
+              }`}
+              onClick={() => !isProcessing && handleSelectRole('processor')}
+            >
+              <CardHeader className="text-center pb-4">
+                <div className="w-20 h-20 rounded-2xl bg-eco-sky/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-eco-sky/20 transition-colors">
+                  <Factory className="w-10 h-10 text-eco-sky" />
+                </div>
+                <CardTitle className="text-2xl">Process & Recycle</CardTitle>
+                <CardDescription className="text-base">
+                  Transform collected waste into valuable resources
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 text-sm">
+                    <CheckCircle2 className="w-5 h-5 text-eco-sky flex-shrink-0" />
+                    <span>Receive waste from collectors</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <CheckCircle2 className="w-5 h-5 text-eco-sky flex-shrink-0" />
+                    <span>Process and recycle materials</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <CheckCircle2 className="w-5 h-5 text-eco-sky flex-shrink-0" />
+                    <span>Earn tokens for processing volume</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <CheckCircle2 className="w-5 h-5 text-eco-sky flex-shrink-0" />
+                    <span>Track recycling output metrics</span>
+                  </div>
+                </div>
+                <Button 
+                  variant="outline" 
+                  className="w-full mt-4 border-eco-sky/30 hover:bg-eco-sky/10 hover:text-eco-sky"
+                  disabled={isProcessing}
+                >
+                  {isProcessing && selectedRole === 'processor' ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Processing Payment...
+                    </>
+                  ) : (
+                    <>
+                      Continue as Processor
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Footer note */}
@@ -266,17 +326,24 @@ const RoleSelection = () => {
           <div className="space-y-4 py-4">
             <div className="bg-muted/50 rounded-lg p-4 space-y-2">
               <p className="text-sm text-muted-foreground">Transaction ID:</p>
-              <p className="text-xs font-mono break-all">{transactionResult?.transactionId}</p>
+              <p className="text-xs font-mono break-all select-all">{transactionResult?.transactionId || 'N/A'}</p>
             </div>
-            <a
-              href={transactionResult?.whatsonchainUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 text-primary hover:underline"
-            >
-              <ExternalLink className="w-4 h-4" />
-              View on Whatsonchain
-            </a>
+            {transactionResult?.whatsonchainUrl && (
+              <a
+                href={transactionResult.whatsonchainUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 text-primary hover:underline font-medium"
+              >
+                <ExternalLink className="w-4 h-4" />
+                View on Whatsonchain
+              </a>
+            )}
+            {!transactionResult?.whatsonchainUrl && transactionResult?.transactionId && (
+              <p className="text-center text-sm text-muted-foreground">
+                ElectrumSV transaction - verify in your wallet
+              </p>
+            )}
           </div>
           <div className="flex justify-end">
             <Button onClick={handleContinue} className="gradient-eco border-0">

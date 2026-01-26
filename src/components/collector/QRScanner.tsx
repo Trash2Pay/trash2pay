@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { useWallet } from "@/contexts/WalletContext";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   QrCode, 
   Camera, 
@@ -20,8 +21,16 @@ import {
   User, 
   Package,
   X,
-  Loader2
+  Loader2,
+  ShieldAlert,
+  ShieldCheck
 } from "lucide-react";
+
+interface VerifiedQRData {
+  qrOwner: string;
+  verified: boolean;
+  scanCount: number;
+}
 
 interface PickupData {
   pickupId: string;
@@ -41,7 +50,10 @@ interface QRScannerProps {
 export const QRScanner = ({ open, onOpenChange, onPickupVerified }: QRScannerProps) => {
   const [isScanning, setIsScanning] = useState(false);
   const [scannedData, setScannedData] = useState<PickupData | null>(null);
+  const [verifiedData, setVerifiedData] = useState<VerifiedQRData | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
   const [rewardAmount, setRewardAmount] = useState(0);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const { walletProfile } = useWallet();
@@ -65,6 +77,7 @@ export const QRScanner = ({ open, onOpenChange, onPickupVerified }: QRScannerPro
 
     try {
       setIsScanning(true);
+      setVerificationError(null);
       await scannerRef.current.start(
         { facingMode: "environment" },
         {
@@ -100,25 +113,67 @@ export const QRScanner = ({ open, onOpenChange, onPickupVerified }: QRScannerPro
 
   const handleScanSuccess = async (decodedText: string) => {
     await stopScanning();
+    setIsVerifying(true);
+    setVerificationError(null);
 
     try {
-      // Parse QR code data - expected format: JSON with pickup info
-      const data = JSON.parse(decodedText) as PickupData;
-      const reward = calculateReward(data.wasteType, data.weight);
-      setScannedData(data);
-      setRewardAmount(reward);
-    } catch {
-      // If not valid JSON, create mock data for demo
-      const mockData: PickupData = {
+      // Verify the QR code with the backend
+      const { data, error } = await supabase.functions.invoke('verify-qr-code', {
+        body: {
+          qrData: decodedText,
+          scannedByWallet: walletProfile?.handle,
+        },
+      });
+
+      if (error) throw error;
+
+      if (!data.verified) {
+        setVerificationError(data.error || 'QR code verification failed');
+        setVerifiedData(null);
+        setScannedData(null);
+        toast({
+          title: "Invalid QR Code",
+          description: data.error || 'This QR code cannot be verified',
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // QR verified! Create pickup data
+      setVerifiedData({
+        qrOwner: data.qrOwner,
+        verified: true,
+        scanCount: data.scanCount,
+      });
+
+      const pickupData: PickupData = {
         pickupId: `pickup-${Date.now()}`,
-        userId: "user-123",
-        userName: "Demo User",
-        wasteType: "Recyclables",
-        weight: 2.5,
+        userId: data.qrOwner,
+        userName: data.qrOwner,
+        wasteType: "Recyclables", // Default, could be selected by collector
+        weight: 2.5, // Default, could be entered by collector
+        userWallet: data.qrOwner,
       };
-      const reward = calculateReward(mockData.wasteType, mockData.weight);
-      setScannedData(mockData);
+
+      const reward = calculateReward(pickupData.wasteType, pickupData.weight);
+      setScannedData(pickupData);
       setRewardAmount(reward);
+
+      toast({
+        title: "QR Code Verified! ✅",
+        description: `User: ${data.qrOwner} - Scan #${data.scanCount}`,
+      });
+
+    } catch (err: any) {
+      console.error("QR verification error:", err);
+      setVerificationError(err.message || 'Failed to verify QR code');
+      toast({
+        title: "Verification Error",
+        description: err.message || 'Failed to verify QR code',
+        variant: "destructive",
+      });
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -132,20 +187,30 @@ export const QRScanner = ({ open, onOpenChange, onPickupVerified }: QRScannerPro
 
     toast({
       title: "Pickup Verified! 🎉",
-      description: `${rewardAmount} T2P Units distributed. User: ${rewardAmount * 0.7} T2P, Collector: ${rewardAmount * 0.3} T2P`,
+      description: `${rewardAmount} T2P Units distributed. User: ${Math.round(rewardAmount * 0.7)} T2P, Collector: ${Math.round(rewardAmount * 0.3)} T2P`,
     });
 
     onPickupVerified?.(scannedData, rewardAmount);
     
     setIsProcessing(false);
     setScannedData(null);
+    setVerifiedData(null);
     onOpenChange(false);
   };
 
   const handleClose = () => {
     stopScanning();
     setScannedData(null);
+    setVerifiedData(null);
+    setVerificationError(null);
     onOpenChange(false);
+  };
+
+  const handleRescan = () => {
+    setScannedData(null);
+    setVerifiedData(null);
+    setVerificationError(null);
+    startScanning();
   };
 
   useEffect(() => {
@@ -174,7 +239,7 @@ export const QRScanner = ({ open, onOpenChange, onPickupVerified }: QRScannerPro
           <DialogDescription>
             {scannedData 
               ? "Review pickup details and confirm to distribute rewards"
-              : "Point camera at the user's pickup QR code"
+              : "Scan the user's Trash2Pay QR code from their waste bin"
             }
           </DialogDescription>
         </DialogHeader>
@@ -185,7 +250,14 @@ export const QRScanner = ({ open, onOpenChange, onPickupVerified }: QRScannerPro
             <div className="relative rounded-xl overflow-hidden bg-muted aspect-square">
               <div id="qr-reader" className="w-full h-full" />
               
-              {!isScanning && (
+              {isVerifying && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-background/90 z-10">
+                  <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                  <span className="text-sm font-medium">Verifying QR Code...</span>
+                </div>
+              )}
+              
+              {!isScanning && !isVerifying && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-background/80">
                   <Camera className="w-12 h-12 text-muted-foreground" />
                   <Button onClick={startScanning} className="gradient-eco border-0">
@@ -195,31 +267,49 @@ export const QRScanner = ({ open, onOpenChange, onPickupVerified }: QRScannerPro
               )}
             </div>
 
+            {/* Verification Error */}
+            {verificationError && (
+              <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20">
+                <div className="flex items-center gap-2 text-destructive mb-2">
+                  <ShieldAlert className="w-5 h-5" />
+                  <span className="font-medium">Invalid QR Code</span>
+                </div>
+                <p className="text-sm text-destructive/80">{verificationError}</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-3"
+                  onClick={handleRescan}
+                >
+                  Try Again
+                </Button>
+              </div>
+            )}
+
             {/* Scanning indicator */}
-            {isScanning && (
+            {isScanning && !isVerifying && (
               <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                 Scanning for QR codes...
               </div>
             )}
 
-            {/* Demo button for testing */}
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => handleScanSuccess(JSON.stringify({
-                pickupId: "demo-pickup-001",
-                userId: "demo-user",
-                userName: "Sarah Wilson",
-                wasteType: "Recyclables",
-                weight: 3.2,
-              }))}
-            >
-              Demo: Simulate Scan
-            </Button>
+            {/* Security notice */}
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted text-sm text-muted-foreground">
+              <ShieldCheck className="w-4 h-4 text-primary flex-shrink-0" />
+              <span>Only QR codes generated by Trash2Pay will be accepted</span>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
+            {/* Verified Badge */}
+            {verifiedData && (
+              <div className="flex items-center justify-center gap-2 p-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
+                <ShieldCheck className="w-5 h-5" />
+                <span className="font-medium">Verified Trash2Pay QR Code</span>
+              </div>
+            )}
+
             {/* Scanned Pickup Details */}
             <Card className="border-primary/20 bg-primary/5">
               <CardContent className="p-4 space-y-4">
@@ -230,7 +320,7 @@ export const QRScanner = ({ open, onOpenChange, onPickupVerified }: QRScannerPro
                   <div>
                     <div className="font-semibold">{scannedData.userName}</div>
                     <div className="text-sm text-muted-foreground">
-                      Pickup ID: {scannedData.pickupId.slice(0, 12)}...
+                      {verifiedData && `Disposal count: ${verifiedData.scanCount}`}
                     </div>
                   </div>
                 </div>
@@ -288,7 +378,7 @@ export const QRScanner = ({ open, onOpenChange, onPickupVerified }: QRScannerPro
               <Button 
                 variant="outline" 
                 className="flex-1"
-                onClick={() => setScannedData(null)}
+                onClick={handleRescan}
                 disabled={isProcessing}
               >
                 <X className="w-4 h-4 mr-2" />

@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom';
 
 interface WalletGateProps {
   children: React.ReactNode;
-  requiredRole?: 'user' | 'collector';
+  requiredRole?: 'user' | 'collector' | 'processor';
 }
 
 export const WalletGate: React.FC<WalletGateProps> = ({ children, requiredRole }) => {
@@ -28,7 +28,14 @@ export const WalletGate: React.FC<WalletGateProps> = ({ children, requiredRole }
   useEffect(() => {
     if (isConnected && userRole && requiredRole && userRole !== requiredRole) {
       // Redirect to correct dashboard based on their role
-      navigate(userRole === 'user' ? '/dashboard' : '/collector');
+      if (userRole === 'user') {
+  navigate('/dashboard');
+} else if (userRole === 'collector') {
+  navigate('/collector');
+} else  {
+  navigate('/processor');
+}
+
     }
   }, [isConnected, userRole, requiredRole, navigate]);
 

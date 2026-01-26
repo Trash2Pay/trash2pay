@@ -29,6 +29,8 @@ import { toast } from "@/hooks/use-toast";
 import { WalletGate } from "@/components/wallets/WalletGate";
 import { WalletButton } from "@/components/wallets/WalletButton";
 import { QRScanner } from "@/components/collector/QRScanner";
+import { UserQRCode } from "@/components/qr/UserQRCode";
+import { WalletBalanceCard } from "@/components/payments/WalletBalanceCard";
 
 // Mock data for pickup requests
 const mockRequests = [
@@ -115,7 +117,7 @@ const CollectorContent = () => {
     setCollectorTokens((prev) => prev + collectorReward);
     toast({
       title: "Pickup Verified! 🎉",
-      description: `You earned ${collectorReward} T2P tokens!`,
+      description: `You earned ${collectorReward} T2P Units!`,
     });
   };
 
@@ -330,6 +332,9 @@ const CollectorContent = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Collector QR Code */}
+            <UserQRCode />
           </div>
         </div>
       </main>

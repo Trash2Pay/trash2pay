@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   Truck,
   Timer,
+  QrCode,
 } from "lucide-react";
 import {
   Dialog,
@@ -40,6 +41,8 @@ import { toast } from "@/hooks/use-toast";
 import { WalletGate } from "@/components/wallets/WalletGate";
 import { WalletButton } from "@/components/wallets/WalletButton";
 import { useWallet } from "@/contexts/WalletContext";
+import { UserQRCode } from "@/components/qr/UserQRCode";
+import { WalletBalanceCard } from "@/components/payments/WalletBalanceCard";
 
 // Mock data
 const mockPickups = [
@@ -166,7 +169,7 @@ const DashboardContent = () => {
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-2xl md:text-3xl font-bold mb-2">Welcome back! 👋</h1>
-          <p className="text-muted-foreground">Manage your pickups and track your eco-rewards.</p>
+          <p className="text-muted-foreground">Manage your pickups and track your T2P Unit rewards.</p>
         </div>
 
         {/* Stats Cards */}
@@ -180,7 +183,7 @@ const DashboardContent = () => {
                 <TrendingUp className="w-5 h-5 text-primary" />
               </div>
               <div className="text-3xl font-bold mb-1">245</div>
-              <div className="text-sm text-muted-foreground">T2P Tokens</div>
+              <div className="text-sm text-muted-foreground">T2P Units</div>
             </CardContent>
           </Card>
 
@@ -339,23 +342,8 @@ const DashboardContent = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Token Balance Card */}
-            <Card className="overflow-hidden">
-              <div className="gradient-eco p-6 text-primary-foreground">
-                <div className="flex items-center gap-2 mb-4">
-                  <Coins className="w-6 h-6" />
-                  <span className="font-semibold">T2P Balance</span>
-                </div>
-                <div className="text-4xl font-bold mb-1">245.00</div>
-                <div className="text-sm opacity-80">≈ $24.50 USD</div>
-              </div>
-              <CardContent className="p-4">
-                <Button variant="outline" className="w-full">
-                  <History className="w-4 h-4 mr-2" />
-                  Transaction History
-                </Button>
-              </CardContent>
-            </Card>
+            {/* T2P Token Balance */}
+            <WalletBalanceCard />
 
             {/* Environmental Impact */}
             <Card>
@@ -395,6 +383,9 @@ const DashboardContent = () => {
                 </Button>
               </CardContent>
             </Card>
+
+            {/* User QR Code */}
+            <UserQRCode />
           </div>
         </div>
       </main>

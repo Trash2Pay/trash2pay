@@ -8,6 +8,7 @@ import Index from "./pages/index";
 import Dashboard from "./pages/Dashboard";
 import Collector from "./pages/Collector";
 import RoleSelection from "./pages/RoleSelection";
+import Processor from "./pages/Processor";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,8 @@ const App = () => (
             <Route path="/select-role" element={<RoleSelection />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/collector" element={<Collector />} />
+            <Route path="/processor" element={<Processor />} />
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export type WalletType = 'handcash' | 'electrumsv';
-export type UserRole = 'user' | 'collector' | null;
+export type UserRole = 'user' | 'collector' | 'processor' | null;
 
 interface WalletProfile {
   handle: string;

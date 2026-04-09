@@ -10,6 +10,7 @@ import Collector from "./pages/Collector";
 import RoleSelection from "./pages/RoleSelection";
 import Processor from "./pages/Processor";
 import NotFound from "./pages/NotFound";
+import Whitepaper from "./pages/Whitepaper";
 
 const queryClient = new QueryClient();
 
@@ -26,7 +27,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/collector" element={<Collector />} />
             <Route path="/processor" element={<Processor />} />
-
+            <Route path="/whitepaper" element={<Whitepaper />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -30,6 +30,9 @@ const Header = () => {
             <a href="#rewards" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
               Rewards
             </a>
+            <Link to="/whitepaper" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
+              Whitepaper
+            </Link>
           </nav>
 
           {/* Desktop CTA */}
@@ -65,6 +68,9 @@ const Header = () => {
               <a href="#rewards" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
                 Rewards
               </a>
+              <Link to="/whitepaper" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
+                Whitepaper
+              </Link>
               <div className="flex flex-col gap-2 pt-4 border-t border-border">
                 <WalletButton />
                 <Button variant="ghost" asChild className="justify-start">

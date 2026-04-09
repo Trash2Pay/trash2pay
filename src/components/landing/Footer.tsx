@@ -44,6 +44,11 @@ const Footer = () => {
                   Dashboard
                 </Link>
               </li>
+              <li>
+                <Link to="/whitepaper" className="text-muted-foreground hover:text-foreground transition-colors text-sm">
+                  Whitepaper
+                </Link>
+              </li>
             </ul>
           </div>
 

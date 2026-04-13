@@ -229,12 +229,35 @@ const Whitepaper = () => {
 
             {/* Roadmap */}
             <Section id="roadmap" icon={<BarChart3 className="w-5 h-5" />} title="9. Roadmap">
-              <div className="not-prose my-6 space-y-4">
-                <RoadmapItem phase="Phase 1 — Foundation" status="Complete" items={["Core dApp development", "QR verification system", "Wallet integration (HandCash, ElectrumSV)", "Paystack payment integration"]} />
-                <RoadmapItem phase="Phase 2 — Growth" status="In Progress" items={["Processor role & batch management", "Dynamic exchange rates", "Transaction history & analytics", "Mobile optimization"]} />
-                <RoadmapItem phase="Phase 3 — Scale" status="Planned" items={["Multi-region deployment", "Carbon credit integration", "IoT smart bin sensors", "Governance token features"]} />
-                <RoadmapItem phase="Phase 4 — Ecosystem" status="Planned" items={["Marketplace for recycled materials", "API for third-party integrations", "DAO governance", "Cross-chain bridges"]} />
-              </div>
+               <div className="not-prose my-6 space-y-4">
+                  <RoadmapItem 
+                  phase="Phase 1 — MVP" 
+                  status="In Progress" 
+                    items={[
+                  "User & collector onboarding", 
+                  "Pickup requests and payments", 
+                  "Proof-of-pickup verification"
+                     ]} 
+                />
+            <RoadmapItem 
+                phase="Phase 2 — Incentives & Marketplace" 
+                status="Planned" 
+                items={[
+                "T2P Units launch", 
+                "Collector bidding system", 
+                "Reputation scoring"
+                     ]} 
+                />
+            <RoadmapItem 
+               phase="Phase 3 — Scale & Integration" 
+               status="Planned" 
+               items={[
+               "Municipal partnerships", 
+               "Recycling traceability", 
+               "Advanced analytics dashboards"
+                      ]} 
+               />
+             </div>
             </Section>
 
             {/* Conclusion */}

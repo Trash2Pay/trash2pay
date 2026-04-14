@@ -74,6 +74,7 @@ const RoleSelection = () => {
 
       if (error) throw error;
       if (!data.success) throw new Error(data.error || 'Registration failed');
+      localStorage.setItem('user_id', data.profileId);
 
       // Store transaction result
       setTransactionResult({

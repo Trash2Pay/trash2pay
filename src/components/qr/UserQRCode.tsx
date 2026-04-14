@@ -22,21 +22,32 @@ export const UserQRCode: React.FC<UserQRCodeProps> = ({ className }) => {
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (walletProfile?.handle) {
+    const userId = localStorage.getItem('user_id');
+    if (walletProfile?.handle && userId) {
       fetchOrGenerateQR();
     }
-  }, [walletProfile?.handle]);
+  }, [walletProfile?.handle, userRole]);
 
   const fetchOrGenerateQR = async () => {
     if (!walletProfile?.handle) return;
-
+    const userId = localStorage.getItem('user_id');
+    if (!userId) {
+    toast({
+      title: "Not registered",
+      description: "Please complete registration first",
+      variant: "destructive",
+    });
+    return;
+  }
     setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-qr-code', {
+        
         body: {
-          walletHandle: walletProfile.handle,
-          userRole: userRole,
-        },
+  userId,
+  walletHandle: walletProfile.handle,
+  userRole: userRole,
+},
       });
 
       if (error) throw error;

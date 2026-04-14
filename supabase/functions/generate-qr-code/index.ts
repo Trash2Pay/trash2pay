@@ -25,11 +25,11 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const { walletHandle, userRole } = await req.json();
+    const { userId, walletHandle, userRole } = await req.json();
 
-    if (!walletHandle) {
-      throw new Error('Missing walletHandle');
-    }
+if (!userId) {
+  throw new Error('Missing userId');
+}
 
     console.log('Generating QR code for:', walletHandle, 'role:', userRole);
 
@@ -37,7 +37,7 @@ serve(async (req) => {
     const { data: existingQR } = await supabase
       .from('user_qr_codes')
       .select('*')
-      .eq('user_id', walletHandle)
+      .eq('user_id', userId)
       .eq('is_active', true)
       .maybeSingle();
 
@@ -72,7 +72,7 @@ serve(async (req) => {
     const { error: insertError } = await supabase
       .from('user_qr_codes')
       .insert({
-        user_id: walletHandle,
+        user_id: userId,
         qr_token: qrToken,
         is_active: true,
       });

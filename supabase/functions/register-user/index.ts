@@ -15,40 +15,42 @@ serve(async (req: Request) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // =========================
+  // INIT ENV + CLIENTS
+  // =========================
+  const appId = Deno.env.get("HANDCASH_APP_ID");
+  const appSecret = Deno.env.get("HANDCASH_APP_SECRET");
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    return new Response(
+      JSON.stringify({ success: false, error: "Supabase not configured" }),
+      { status: 500, headers: corsHeaders }
+    );
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
   try {
-    const appId = Deno.env.get("HANDCASH_APP_ID");
-    const appSecret = Deno.env.get("HANDCASH_APP_SECRET");
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const body = await req.json();
+    const { authToken, role, walletHandle, walletType } = body;
 
-    if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error("Supabase credentials not configured");
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    const { authToken, role, walletHandle, walletType } = await req.json();
-
-    // ✅ Flexible validation
     if (!role || !walletHandle || !walletType) {
-      throw new Error(
-        "Missing required fields: role, walletHandle, walletType"
-      );
+      throw new Error("Missing required fields");
     }
 
-    console.log("Wallet:", walletHandle, "| Type:", walletType);
+    console.log("Registering:", walletHandle, walletType);
 
-    let transactionId = null;
+    let transactionId: string | null = null;
 
     // =========================
-    // 🟢 HANDCASH FLOW
+    // HANDCASH FLOW
     // =========================
     if (walletType === "handcash") {
       if (!authToken || !appId || !appSecret) {
         throw new Error("HandCash credentials missing");
       }
-
-      console.log("Processing HandCash payment...");
 
       const paymentResponse = await fetch(
         "https://cloud.handcash.io/v3/pay",
@@ -74,74 +76,64 @@ serve(async (req: Request) => {
       );
 
       if (!paymentResponse.ok) {
-        const errorText = await paymentResponse.text();
-        throw new Error(`Payment failed: ${errorText}`);
+        throw new Error(await paymentResponse.text());
       }
 
-      const paymentResult = await paymentResponse.json();
-      transactionId = paymentResult.transactionId;
+      const payment = await paymentResponse.json();
+      transactionId = payment.transactionId;
     }
 
     // =========================
-    // 🔵 ELECTRUM SV FLOW
+    // ELECTRUMSV FLOW
     // =========================
     if (walletType === "electrumsv") {
-      console.log("ElectrumSV user - skipping automatic charge");
-
-      // You can later:
-      // - Verify payment manually
-      // - Or require frontend TX submission
-
       transactionId = "manual-" + crypto.randomUUID();
     }
 
     // =========================
-    // DATABASE LOGIC
+    // PROFILE UPSERT
     // =========================
-
-    const { data: existingProfile } = await supabase
+    const { data: existing } = await supabase
       .from("profiles")
       .select("id")
       .eq("wallet_handle", walletHandle)
-      .single();
+      .maybeSingle();
 
     let profileId: string;
 
-    if (existingProfile) {
-      profileId = existingProfile.id;
+    if (existing) {
+      profileId = existing.id;
 
       await supabase
         .from("profiles")
         .update({
           wallet_connected_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
         })
         .eq("id", profileId);
     } else {
-      const newId = crypto.randomUUID();
+      profileId = crypto.randomUUID();
 
       const { error } = await supabase.from("profiles").insert({
-        id: newId,
+        id: profileId,
         wallet_handle: walletHandle,
         wallet_type: walletType,
         wallet_connected_at: new Date().toISOString(),
       });
 
       if (error) throw error;
-
-      profileId = newId;
     }
 
-    // Role
+    // =========================
+    // ROLE
+    // =========================
     await supabase.from("user_roles").upsert(
-      {
-        user_id: profileId,
-        role,
-      },
+      { user_id: profileId, role },
       { onConflict: "user_id" }
     );
 
-    // Token balance
+    // =========================
+    // BALANCE
+    // =========================
     await supabase.from("token_balances").upsert(
       {
         user_id: profileId,
@@ -151,7 +143,9 @@ serve(async (req: Request) => {
       { onConflict: "user_id" }
     );
 
-    // Transaction log
+    // =========================
+    // TRANSACTION LOG
+    // =========================
     await supabase.from("token_transactions").insert({
       user_id: profileId,
       amount: -REGISTRATION_FEE_SATOSHIS,
@@ -159,17 +153,46 @@ serve(async (req: Request) => {
       description: `Registration (${walletType}) - TX: ${transactionId}`,
     });
 
-    const whatsonchainUrl =
-      transactionId && !transactionId.startsWith("manual")
-        ? `https://whatsonchain.com/tx/${transactionId}`
-        : null;
+    // =========================
+    // QR GENERATION (IMPORTANT FIX)
+    // =========================
+    let qrData = null;
 
+    try {
+      const qrRes = await fetch(
+        `${supabaseUrl}/functions/v1/generate-qr-code`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${supabaseServiceKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            walletHandle,
+            userRole: role,
+          }),
+        }
+      );
+
+      qrData = await qrRes.json();
+      console.log("QR generated:", qrData);
+    } catch (e) {
+      console.error("QR generation failed:", e);
+    }
+
+    // =========================
+    // RESPONSE
+    // =========================
     return new Response(
       JSON.stringify({
         success: true,
-        transactionId,
-        whatsonchainUrl,
         profileId,
+        transactionId,
+        whatsonchainUrl:
+          transactionId && !transactionId.startsWith("manual")
+            ? `https://whatsonchain.com/tx/${transactionId}`
+            : null,
+        qr: qrData || null,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

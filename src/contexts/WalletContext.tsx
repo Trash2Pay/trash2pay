@@ -70,7 +70,8 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
   // Listen for HandCash OAuth callback
   useEffect(() => {
     const handleAuthCallback = async () => {
-      const urlParams = new URLSearchParams(window.location.search);
+      const hash = window.location.hash.replace('#/?', '');
+const urlParams = new URLSearchParams(hash);
       const authToken = urlParams.get('authToken');
       
       if (authToken) {
@@ -97,7 +98,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
           setIsConnected(true);
           setIsNewUser(true); // Mark as new user to trigger role selection
           localStorage.setItem('bsv_wallet', JSON.stringify(profile));
-          localStorage.setItem('handcash_auth_token', authToken);
+          localStorage.setItem('handcash_auth_token', data.accessToken);
           
           // Clean URL
           window.history.replaceState({}, document.title, window.location.pathname);

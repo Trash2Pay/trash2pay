@@ -1,4 +1,3 @@
-/// <reference lib="deno.ns" />
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -35,7 +34,7 @@ serve(async (req: Request) => {
 
   try {
     const body = await req.json();
-    const { authToken, role, walletHandle, walletType } = body;
+    const { accessToken, role, walletHandle, walletType } = body;
 
     if (!role || !walletHandle || !walletType) {
       throw new Error("Missing required fields");
@@ -58,7 +57,7 @@ serve(async (req: Request) => {
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${authToken}`,
+            Authorization: `Bearer ${accessToken}`,
             "app-id": appId,
             "app-secret": appSecret,
             "Content-Type": "application/json",

@@ -98,7 +98,7 @@ const urlParams = new URLSearchParams(hash);
           setIsConnected(true);
           setIsNewUser(true); // Mark as new user to trigger role selection
           localStorage.setItem('bsv_wallet', JSON.stringify(profile));
-          localStorage.setItem('handcash_auth_token', data.accessToken);
+          localStorage.setItem('handcash_access_token', data.accessToken);
           
           // Clean URL
           window.history.replaceState({}, document.title, window.location.pathname);

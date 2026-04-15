@@ -59,7 +59,7 @@ serve(async (req: Request) => {
             "app-secret": appSecret,
           },
           body: JSON.stringify({
-            grant_type: "authorization_code",
+            grantType: "authorization_code",
             code: authToken,
           }),
         }

@@ -51,8 +51,8 @@ const RoleSelection = () => {
       return;
     }
 
-    const authToken = localStorage.getItem('handcash_auth_token');
-    if (!authToken && walletProfile.walletType === 'handcash') {
+    const accessToken = localStorage.getItem('handcash_access_token');
+    if (!accessToken && walletProfile.walletType === 'handcash') {
       toast.error('Please reconnect your HandCash wallet');
       return;
     }
@@ -65,7 +65,7 @@ const RoleSelection = () => {
 
       const { data, error } = await supabase.functions.invoke('register-user', {
         body: {
-          authToken: walletProfile.walletType === 'handcash' ? authToken : null,
+          authToken: walletProfile.walletType === 'handcash' ? accessToken : null,
           role,
           walletHandle: walletProfile.handle,
           walletType: walletProfile.walletType,

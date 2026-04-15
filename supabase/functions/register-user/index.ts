@@ -34,7 +34,7 @@ serve(async (req: Request) => {
 
   try {
     const body = await req.json();
-    const { accessToken, role, walletHandle, walletType } = body;
+    const { authToken: accessToken, role, walletHandle, walletType } = body;
 
     if (!role || !walletHandle || !walletType) {
       throw new Error("Missing required fields");
@@ -48,7 +48,7 @@ serve(async (req: Request) => {
     // HANDCASH FLOW
     // =========================
     if (walletType === "handcash") {
-      if (!authToken || !appId || !appSecret) {
+      if (!accessToken || !appId || !appSecret) {
         throw new Error("HandCash credentials missing");
       }
 

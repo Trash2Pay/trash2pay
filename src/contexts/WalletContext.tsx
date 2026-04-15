@@ -82,9 +82,12 @@ if (storedWallet && storedAccessToken) {
   // Listen for HandCash OAuth callback
   useEffect(() => {
     const handleAuthCallback = async () => {
-      const hash = window.location.hash.replace('#/?', '');
+      const hash = window.location.hash.substring(1); 
 const urlParams = new URLSearchParams(hash);
-      const authToken = urlParams.get('authToken');
+const authToken = urlParams.get('authToken');
+
+console.log("FULL HASH:", window.location.hash);
+console.log("PARSED TOKEN:", authToken);
       
       if (authToken) {
         setIsConnecting(true);

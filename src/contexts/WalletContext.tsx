@@ -52,6 +52,18 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
   useEffect(() => {
     const storedWallet = localStorage.getItem('bsv_wallet');
     const storedRole = localStorage.getItem('user_role') as UserRole;
+
+    const storedAccessToken = localStorage.getItem('handcash_access_token');
+
+if (storedWallet && storedAccessToken) {
+  const profile = JSON.parse(storedWallet);
+  setWalletProfile(profile);
+  setIsConnected(true);
+
+  if (storedRole) {
+    setUserRoleState(storedRole);
+  }
+}
     
     if (storedWallet) {
       try {
@@ -98,6 +110,10 @@ const urlParams = new URLSearchParams(hash);
           setIsConnected(true);
           setIsNewUser(true); // Mark as new user to trigger role selection
           localStorage.setItem('bsv_wallet', JSON.stringify(profile));
+
+          if (!data.accessToken) {
+  throw new Error('No accessToken returned from HandCash');
+}
           localStorage.setItem('handcash_access_token', data.accessToken);
           
           // Clean URL
@@ -169,7 +185,7 @@ const urlParams = new URLSearchParams(hash);
     setUserRoleState(null);
     setIsNewUser(false);
     localStorage.removeItem('bsv_wallet');
-    localStorage.removeItem('handcash_auth_token');
+    localStorage.removeItem('handcash_access_token');
     localStorage.removeItem('user_role');
   };
 

@@ -23,20 +23,21 @@ serve(async (req: Request) => {
     console.log("HandCash action:", action);
 
     // =========================
-    // 🔵 STEP 1: GET REDIRECT URL
-    // =========================
-    if (action === "get-redirect-url") {
-      const origin =
-        req.headers.get("origin") || "https://trash2pay.vercel.app";
+// 🔵 STEP 1: GET REDIRECT URL (FIXED)
+// =========================
+if (action === "get-redirect-url") {
+  const REDIRECT_URI = "https://trash2pay.vercel.app"; // 🔥 MUST BE STATIC
 
-      const redirectUrl = `https://app.handcash.io/#/authorizeApp?appId=${appId}&redirectUrl=${encodeURIComponent(
-        origin
-      )}`;
+  const redirectUrl = `https://app.handcash.io/#/authorizeApp?appId=${appId}&redirectUrl=${encodeURIComponent(
+    REDIRECT_URI
+  )}`;
 
-      return new Response(JSON.stringify({ redirectUrl }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+  console.log("Using redirect URI:", REDIRECT_URI);
+
+  return new Response(JSON.stringify({ redirectUrl }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
 
     // =========================
     // 🟢 STEP 2: VERIFY TOKEN (FIXED)

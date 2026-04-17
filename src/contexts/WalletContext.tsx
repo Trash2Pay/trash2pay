@@ -55,83 +55,80 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
 
     const storedAccessToken = localStorage.getItem('handcash_access_token');
 
-if (storedWallet && storedAccessToken) {
-  const profile = JSON.parse(storedWallet);
-  setWalletProfile(profile);
-  setIsConnected(true);
+if (storedWallet) {
+  try {
+    const profile = JSON.parse(storedWallet);
+    setWalletProfile(profile);
+    setIsConnected(true);
 
-  if (storedRole) {
-    setUserRoleState(storedRole);
+    if (storedRole) {
+      setUserRoleState(storedRole);
+    }
+  } catch {
+    localStorage.removeItem('bsv_wallet');
   }
 }
-    
-    if (storedWallet) {
-      try {
-        const profile = JSON.parse(storedWallet);
-        setWalletProfile(profile);
-        setIsConnected(true);
-        if (storedRole) {
-          setUserRoleState(storedRole);
-        }
-      } catch (e) {
-        localStorage.removeItem('bsv_wallet');
-      }
+}, []);
+
+// Listen for HandCash OAuth callback (FIXED)
+useEffect(() => {
+  const handleAuthCallback = async () => {
+    // ✅ Check query params FIRST
+    const searchParams = new URLSearchParams(window.location.search);
+    let authToken = searchParams.get('authToken');
+
+    // ✅ Fallback to hash
+    if (!authToken) {
+      const hash = window.location.hash.substring(1);
+      const hashParams = new URLSearchParams(hash);
+      authToken = hashParams.get('authToken');
     }
-  }, []);
 
-  // Listen for HandCash OAuth callback
-  useEffect(() => {
-    const handleAuthCallback = async () => {
-      const hash = window.location.hash.substring(1); 
-const urlParams = new URLSearchParams(hash);
-const authToken = urlParams.get('authToken');
+    console.log("SEARCH:", window.location.search);
+    console.log("HASH:", window.location.hash);
+    console.log("FINAL TOKEN:", authToken);
 
-console.log("FULL HASH:", window.location.hash);
-console.log("PARSED TOKEN:", authToken);
-      
-      if (authToken) {
-        setIsConnecting(true);
-        setError(null);
-        
-        try {
-          const { data, error: fnError } = await supabase.functions.invoke('handcash-auth', {
-            body: { action: 'verify-token', authToken },
-          });
+    if (!authToken) return;
 
-          if (fnError) throw fnError;
-          if (data.error) throw new Error(data.error);
+    setIsConnecting(true);
+    setError(null);
 
-          const profile: WalletProfile = {
-            handle: data.handle,
-            displayName: data.displayName,
-            avatarUrl: data.avatarUrl,
-            paymail: data.paymail,
-            walletType: 'handcash',
-          };
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('handcash-auth', {
+        body: { action: 'verify-token', authToken },
+      });
 
-          setWalletProfile(profile);
-          setIsConnected(true);
-          setIsNewUser(true); // Mark as new user to trigger role selection
-          localStorage.setItem('bsv_wallet', JSON.stringify(profile));
+      if (fnError) throw fnError;
+      if (!data.success) throw new Error(data.error);
 
-          if (!data.accessToken) {
-  throw new Error('No accessToken returned from HandCash');
-}
-          localStorage.setItem('handcash_access_token', data.accessToken);
-          
-          // Clean URL
-          window.history.replaceState({}, document.title, window.location.pathname);
-        } catch (err: any) {
-          console.error('Wallet connection error:', err);
-          setError(err.message || 'Failed to connect wallet');
-        } finally {
-          setIsConnecting(false);
-        }
-      }
-    };
+      const profile: WalletProfile = {
+        handle: data.handle,
+        displayName: data.displayName,
+        avatarUrl: data.avatarUrl,
+        paymail: data.paymail,
+        walletType: 'handcash',
+      };
 
-    handleAuthCallback();
-  }, []);
+      setWalletProfile(profile);
+      setIsConnected(true);
+      setIsNewUser(true);
+
+      localStorage.setItem('bsv_wallet', JSON.stringify(profile));
+      localStorage.setItem('handcash_access_token', data.accessToken);
+
+      // ✅ Clean URL after success
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+    } catch (err: any) {
+      console.error('Wallet connection error:', err);
+      setError(err.message || 'Failed to connect wallet');
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  handleAuthCallback();
+}, [window.location.search]);
 
   const connectHandCash = async () => {
     setIsConnecting(true);

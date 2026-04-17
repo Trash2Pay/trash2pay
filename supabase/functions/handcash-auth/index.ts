@@ -50,20 +50,19 @@ serve(async (req: Request) => {
 
       // 🔥 CRITICAL FIX: Exchange authToken → accessToken
       const tokenResponse = await fetch(
-        "https://cloud.handcash.io/v3/connect/token",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "app-id": appId,
-            "app-secret": appSecret,
-          },
-          body: JSON.stringify({
-            grantType: "authorization_code",
-            code: authToken,
-          }),
-        }
-      );
+  "https://api.handcash.io/v1/connect/token",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Authorization": `Basic ${btoa(`${appId}:${appSecret}`)}`,
+    },
+    body: new URLSearchParams({
+      grant_type: "authorization_code",
+      code: authToken,
+    }),
+  }
+);
 
       if (!tokenResponse.ok) {
         const errText = await tokenResponse.text();
@@ -72,7 +71,8 @@ serve(async (req: Request) => {
       }
 
       const tokenData = await tokenResponse.json();
-      const accessToken = tokenData.accessToken;
+      console.log("TOKEN DATA:", tokenData);
+      const accessToken = tokenData.access_token;
 
       if (!accessToken) {
         throw new Error("No accessToken returned from HandCash");

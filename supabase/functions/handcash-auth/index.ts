@@ -72,7 +72,7 @@ serve(async (req: Request) => {
 
       const tokenData = await tokenResponse.json();
       console.log("TOKEN DATA:", tokenData);
-      const accessToken = tokenData.access_token;
+      const accessToken = tokenData.accessToken;
 
       if (!accessToken) {
         throw new Error("No accessToken returned from HandCash");

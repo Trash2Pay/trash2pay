@@ -60,6 +60,7 @@ serve(async (req: Request) => {
     body: new URLSearchParams({
       grant_type: "authorization_code",
       code: authToken,
+      redirect_uri: origin,
     }),
   }
 );

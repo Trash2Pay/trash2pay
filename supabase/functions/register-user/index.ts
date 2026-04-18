@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { HandCashConnect } from 'npm:@handcash/handcash-connect';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,7 +9,7 @@ const corsHeaders = {
 };
 
 const REGISTRATION_FEE_SATOSHIS = 100;
-const PLATFORM_WALLET = "trash2pay";
+const PLATFORM_WALLET = "bravolak@handcash.io";
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -45,43 +46,40 @@ serve(async (req: Request) => {
     let transactionId: string | null = null;
 
     // =========================
-    // HANDCASH FLOW
-    // =========================
-    if (walletType === "handcash") {
-      if (!accessToken || !appId || !appSecret) {
-        throw new Error("HandCash credentials missing");
-      }
+// HANDCASH FLOW (SDK FIXED)
+// =========================
+if (walletType === "handcash") {
+  if (!accessToken || !appId || !appSecret) {
+    throw new Error("HandCash credentials missing");
+  }
 
-      const paymentResponse = await fetch(
-        "https://cloud.handcash.io/v3/pay",
+  // 1. Initialize the SDK
+  const handCashConnect = new HandCashConnect({ appId, appSecret });
+  
+  // 2. Get the account using the user's accessToken
+  const account = handCashConnect.getAccountFromAuthToken(accessToken);
+
+  try {
+    // 3. Use the SDK wallet.pay method
+    const payment = await account.wallet.pay({
+      description: `Trash2Pay Reg - ${role}`,
+      payments: [
         {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "app-id": appId,
-            "app-secret": appSecret,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            description: `Trash2Pay Registration - ${role}`,
-            receivers: [
-              {
-                destination: PLATFORM_WALLET,
-                currencyCode: "SAT",
-                sendAmount: REGISTRATION_FEE_SATOSHIS,
-              },
-            ],
-          }),
-        }
-      );
+          destination: PLATFORM_WALLET,
+          currencyCode: "SAT",
+          sendAmount: REGISTRATION_FEE_SATOSHIS,
+        },
+      ],
+    });
 
-      if (!paymentResponse.ok) {
-        throw new Error(await paymentResponse.text());
-      }
+    transactionId = payment.transactionId;
+    console.log("Payment successful:", transactionId);
+  } catch (payError: any) {
+    console.error("HandCash payment failed:", payError);
+    throw new Error(`HandCash payment failed: ${payError.message}`);
+  }
+}
 
-      const payment = await paymentResponse.json();
-      transactionId = payment.transactionId;
-    }
 
     // =========================
     // ELECTRUMSV FLOW

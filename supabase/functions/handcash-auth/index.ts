@@ -1,12 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { HandCashConnect } from 'npm:@handcash/handcash-connect';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req: Request) => {
+  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -20,125 +21,46 @@ serve(async (req: Request) => {
     }
 
     const { action, authToken } = await req.json();
-    console.log("HandCash action:", action);
+    const handCashConnect = new HandCashConnect({ appId, appSecret });
 
-    // =========================
-// 🔵 STEP 1: GET REDIRECT URL (FIXED)
-// =========================
-if (action === "get-redirect-url") {
-  const REDIRECT_URI = "https://trash2pay.vercel.app"; // 🔥 MUST BE STATIC
+    // --- ACTION: GET REDIRECT URL ---
+    if (action === "get-redirect-url") {
+      const redirectUrl = handCashConnect.getRedirectionUrl();
+      return new Response(JSON.stringify({ redirectUrl }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-  const redirectUrl = `https://app.handcash.io/#/authorizeApp?appId=${appId}&redirectUrl=${encodeURIComponent(
-    REDIRECT_URI
-  )}`;
-
-  console.log("Using redirect URI:", REDIRECT_URI);
-
-  return new Response(JSON.stringify({ redirectUrl }), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
-
-    // =========================
-    // 🟢 STEP 2: VERIFY TOKEN (FIXED)
-    // =========================
+    // --- ACTION: VERIFY TOKEN ---
     if (action === "verify-token") {
-      if (!authToken) {
-        throw new Error("Missing authToken");
-      }
+      if (!authToken) throw new Error("Missing authToken");
 
-      console.log("Exchanging authToken for accessToken...");
+      // Correct SDK flow
+      const account = handCashConnect.getAccountFromAuthToken(authToken);
+      const profile = await account.profile.getCurrentProfile();
 
-      // 🔥 CRITICAL FIX: Exchange authToken → accessToken
-      const tokenResponse = await fetch(
-  "https://api.handcash.io/v1/connect/token",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      "Authorization": `Basic ${btoa(`${appId}:${appSecret}`)}`,
-    },
-    body: new URLSearchParams({
-      grant_type: "authorization_code",
-      code: authToken,
-      redirect_uri: origin,
-    }),
-  }
-);
-
-      if (!tokenResponse.ok) {
-        const errText = await tokenResponse.text();
-        console.error("Token exchange failed:", errText);
-        throw new Error("Failed to exchange HandCash token");
-      }
-
-      const tokenData = await tokenResponse.json();
-      console.log("TOKEN DATA:", tokenData);
-      const accessToken = tokenData.accessToken;
-
-      if (!accessToken) {
-        throw new Error("No accessToken returned from HandCash");
-      }
-
-      console.log("Access token obtained");
-
-      // =========================
-      // 🔵 STEP 3: FETCH USER PROFILE
-      // =========================
-      const profileResponse = await fetch(
-        "https://api.handcash.io/v3/connect/profile/currentUserProfile",
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      );
-
-      if (!profileResponse.ok) {
-        const errText = await profileResponse.text();
-        console.error("Profile fetch failed:", errText);
-        throw new Error("Failed to fetch HandCash profile");
-      }
-
-      const profile = await profileResponse.json();
-
-      console.log("Profile fetched successfully");
-
-      const handle = profile.publicProfile?.handle;
-      const displayName = profile.publicProfile?.displayName;
-      const avatarUrl = profile.publicProfile?.avatarUrl;
-      const paymail = profile.publicProfile?.paymail;
-
-      // =========================
-      // ✅ RETURN EVERYTHING NEEDED
-      // =========================
       return new Response(
         JSON.stringify({
           success: true,
-          handle,
-          displayName,
-          avatarUrl,
-          paymail,
-          accessToken, // 🔥 VERY IMPORTANT
+          handle: profile.publicProfile.handle,
+          displayName: profile.publicProfile.displayName,
+          avatarUrl: profile.publicProfile.avatarUrl,
+          paymail: profile.publicProfile.paymail,
+          accessToken: authToken,
         }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     throw new Error("Invalid action");
+    
   } catch (error: any) {
-    console.error("HandCash auth error:", error);
-
+    console.error("HandCash auth error:", error.message);
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message || "Unknown error",
-      }),
-      {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      JSON.stringify({ success: false, error: error.message || "Unknown error" }),
+      { 
+        status: 400, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
       }
     );
   }

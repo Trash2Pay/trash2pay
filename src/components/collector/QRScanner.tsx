@@ -161,7 +161,7 @@ export const QRScanner = ({ open, onOpenChange, onPickupVerified }: QRScannerPro
 
       toast({
         title: "QR Code Verified! ✅",
-        description: `User: ${data.qrOwner} - Scan #${data.scanCount}`,
+        description: `User: ${data.user} - Scan #${data.scanCount}`,
       });
 
     } catch (err: any) {

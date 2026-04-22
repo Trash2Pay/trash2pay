@@ -118,74 +118,102 @@ export const QRScanner = ({ open, onOpenChange, onPickupVerified }: QRScannerPro
 
     try {
       // Verify the QR code with the backend
-      // ✅ Get authenticated user
-const { data: authData, error: authError } = await supabase.auth.getUser();
+      // =========================
+    // ✅ GET USER ID (AUTH)
+    // =========================
+    const { data: authData } = await supabase.auth.getUser();
+    const authUserId = authData?.user?.id || null;
 
-if (authError || !authData?.user) {
-  throw new Error("User not authenticated");
-}
+    // =========================
+    // ✅ GET WALLET ID
+    // =========================
+    const walletId = walletProfile?.handle || null;
 
-const scannedByUserId = authData.user.id;
+    // =========================
+    // ✅ ENSURE WE HAVE AT LEAST ONE IDENTITY
+    // =========================
+    if (!authUserId && !walletId) {
+      throw new Error("No identity found (login or connect wallet)");
+    }
 
-// ✅ Call edge function correctly
-const { data, error } = await supabase.functions.invoke('verify-qr-code', {
-  body: {
-    qrData: decodedText,
-    scannedByUserId, // ✅ FIXED
-  },
-});
-
-      if (error) throw error;
-
-      if (!data.verified) {
-        setVerificationError(data.error || 'QR code verification failed');
-        setVerifiedData(null);
-        setScannedData(null);
-        toast({
-          title: "Invalid QR Code",
-          description: data.error || 'This QR code cannot be verified',
-          variant: "destructive",
-        });
-        return;
+    console.log("🧾 Scanner Identity:", {
+      authUserId,
+      walletId,
+    });
+// =========================
+    // ✅ CALL EDGE FUNCTION
+    // =========================
+    const { data, error } = await supabase.functions.invoke(
+      "verify-qr-code",
+      {
+        body: {
+          qrData: decodedText,
+          scannedByUserId: authUserId, // may be null
+          scannedByWallet: walletId,   // may be null
+        },
       }
+    );
+
+    if (error) throw error;
+
+    if (!data?.verified) {
+      setVerificationError(data?.error || "QR code verification failed");
+      setVerifiedData(null);
+      setScannedData(null);
+
+      toast({
+        title: "Invalid QR Code",
+        description: data?.error || "This QR code cannot be verified",
+        variant: "destructive",
+      });
+
+      return;
+    }
 
       // QR verified! Create pickup data
       setVerifiedData({
-        qrOwner: data.qrOwner,
-        verified: true,
-        scanCount: data.scanCount,
-      });
+      qrOwner: data.user,
+      verified: true,
+      scanCount: data.scanCount,
+    });
 
-      const pickupData: PickupData = {
-        pickupId: `pickup-${Date.now()}`,
-        userId: data.qrOwner,
-        userName: data.qrOwner,
-        wasteType: "Recyclables", // Default, could be selected by collector
-        weight: 2.5, // Default, could be entered by collector
-        userWallet: data.qrOwner,
-      };
+    const pickupData: PickupData = {
+      pickupId: `pickup-${Date.now()}`,
+      userId: data.user,
+      userName: data.user,
+      wasteType: "Recyclables",
+      weight: 2.5,
+      userWallet: data.user,
+    };
 
-      const reward = calculateReward(pickupData.wasteType, pickupData.weight);
-      setScannedData(pickupData);
-      setRewardAmount(reward);
+    const reward = calculateReward(
+      pickupData.wasteType,
+      pickupData.weight
+    );
 
-      toast({
-        title: "QR Code Verified! ✅",
-        description: `User: ${data.user} - Scan #${data.scanCount}`,
-      });
+    setScannedData(pickupData);
+    setRewardAmount(reward);
 
-    } catch (err: any) {
-      console.error("QR verification error:", err);
-      setVerificationError(err.message || 'Failed to verify QR code');
-      toast({
-        title: "Verification Error",
-        description: err.message || 'Failed to verify QR code',
-        variant: "destructive",
-      });
-    } finally {
-      setIsVerifying(false);
-    }
-  };
+    toast({
+      title: "QR Code Verified! ✅",
+      description: `User: ${data.user} - Scan #${data.scanCount}`,
+    });
+
+  } catch (err: any) {
+    console.error("QR verification error:", err);
+
+    setVerificationError(err.message || "Failed to verify QR code");
+
+    toast({
+      title: "Verification Error",
+      description: err.message || "Failed to verify QR code",
+      variant: "destructive",
+    });
+
+  } finally {
+    setIsVerifying(false);
+  }
+};
 
   const handleConfirmPickup = async () => {
     if (!scannedData) return;

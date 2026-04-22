@@ -118,12 +118,22 @@ export const QRScanner = ({ open, onOpenChange, onPickupVerified }: QRScannerPro
 
     try {
       // Verify the QR code with the backend
-      const { data, error } = await supabase.functions.invoke('verify-qr-code', {
-        body: {
-          qrData: decodedText,
-          scannedByWallet: walletProfile?.handle,
-        },
-      });
+      // ✅ Get authenticated user
+const { data: authData, error: authError } = await supabase.auth.getUser();
+
+if (authError || !authData?.user) {
+  throw new Error("User not authenticated");
+}
+
+const scannedByUserId = authData.user.id;
+
+// ✅ Call edge function correctly
+const { data, error } = await supabase.functions.invoke('verify-qr-code', {
+  body: {
+    qrData: decodedText,
+    scannedByUserId, // ✅ FIXED
+  },
+});
 
       if (error) throw error;
 

@@ -9,7 +9,7 @@ const corsHeaders = {
 
 const APP_SIGNATURE = "T2P";
 
-// ✅ Logging helper (matches DB schema)
+// ✅ Logging helper
 async function logScan(
   supabase: any,
   qrCodeId: string | null,
@@ -50,7 +50,12 @@ serve(async (req) => {
 
     console.log("🔍 Verifying QR...");
 
-    // ✅ Parse QR safely
+    // ✅ HARD REQUIRE USER (prevents infinite increment bug)
+    if (!scannedByUserId) {
+      throw new Error("Missing scannedByUserId");
+    }
+
+    // ✅ Parse QR
     let parsedData;
     try {
       parsedData =
@@ -63,7 +68,7 @@ serve(async (req) => {
       );
     }
 
-    // ✅ Validate signature
+    // ✅ Signature check
     if (parsedData.app !== APP_SIGNATURE) {
       await logScan(supabase, null, scannedByUserId, false, "Invalid signature");
       return new Response(
@@ -113,13 +118,57 @@ serve(async (req) => {
       scan_count: qrRecord.scan_count,
     });
 
-    // ✅ Check active
+    // ✅ ACTIVE CHECK
     if (!qrRecord.is_active) {
       await logScan(supabase, qrRecord.id, scannedByUserId, false, "Deactivated");
       return new Response(
         JSON.stringify({ success: false, error: "QR is deactivated" }),
         { headers: corsHeaders }
       );
+    }
+
+    // =========================
+    // ✅ COOLDOWN CHECK (STRICT)
+    // =========================
+    const { data: existingScan, error: scanError } = await supabase
+      .from("qr_scan_logs")
+      .select("id, scanned_at")
+      .eq("qr_code_id", qrRecord.id)
+      .eq("scanned_by_user_id", scannedByUserId)
+      .order("scanned_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (scanError) {
+      console.error("❌ Scan lookup failed:", scanError.message);
+    }
+
+    if (existingScan) {
+      const lastScanTime = new Date(existingScan.scanned_at).getTime();
+      const now = Date.now();
+      const diffSeconds = (now - lastScanTime) / 1000;
+
+      if (diffSeconds < 30) {
+        console.log("⛔ Duplicate scan blocked");
+
+        await logScan(
+          supabase,
+          qrRecord.id,
+          scannedByUserId,
+          false,
+          "Cooldown: duplicate scan"
+        );
+
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Please wait before scanning again",
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
     }
 
     // =========================
@@ -136,17 +185,16 @@ serve(async (req) => {
     }
 
     // =========================
-    // ✅ FETCH REAL COUNT (SOURCE OF TRUTH)
+    // ✅ FETCH TRUE COUNT
     // =========================
-    const { data: updatedRecord, error: fetchError } = await supabase
+    const { data: updatedRecord } = await supabase
       .from("user_qr_codes")
       .select("scan_count")
       .eq("id", qrRecord.id)
       .single();
 
-    const finalScanCount = fetchError
-      ? (qrRecord.scan_count || 0) + 1
-      : updatedRecord.scan_count;
+    const finalScanCount =
+      updatedRecord?.scan_count ?? (qrRecord.scan_count || 0) + 1;
 
     // ✅ Log success
     await logScan(supabase, qrRecord.id, scannedByUserId, true, null);
@@ -156,9 +204,6 @@ serve(async (req) => {
       scanCount: finalScanCount,
     });
 
-    // =========================
-    // ✅ RESPONSE
-    // =========================
     return new Response(
       JSON.stringify({
         success: true,

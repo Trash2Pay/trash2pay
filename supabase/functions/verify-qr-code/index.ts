@@ -21,6 +21,7 @@ async function logScan(
     const { error } = await supabase.from("qr_scan_logs").insert({
       qr_code_id: qrCodeId,
       scanned_by_user_id: scannedByUserId,
+      scanned_by_wallet: scannedByWallet,
       verification_result: result,
       failure_reason: failureReason,
       scanned_at: new Date().toISOString(),

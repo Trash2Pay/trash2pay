@@ -9,16 +9,17 @@ const corsHeaders = {
 
 const APP_SIGNATURE = "T2P";
 
-// ✅ Logging helper
+// ✅ Logging helper (SAFE)
 async function logScan(
   supabase: any,
   qrCodeId: string | null,
   scannedByUserId: string | null,
+  scannedByWallet: string | null,
   result: boolean,
   failureReason: string | null
 ) {
   try {
-    const { error } = await supabase.from("qr_scan_logs").insert({
+    await supabase.from("qr_scan_logs").insert({
       qr_code_id: qrCodeId,
       scanned_by_user_id: scannedByUserId,
       scanned_by_wallet: scannedByWallet,
@@ -26,10 +27,8 @@ async function logScan(
       failure_reason: failureReason,
       scanned_at: new Date().toISOString(),
     });
-
-    if (error) console.error("logScan DB Error:", error.message);
   } catch (e) {
-    console.error("logScan Critical Error:", e);
+    console.error("logScan error:", e);
   }
 }
 
@@ -45,83 +44,137 @@ serve(async (req) => {
     );
 
     const body = await req.json().catch(() => ({}));
-    const { qrData, scannedByUserId } = body;
+
+    // =========================
+    // ✅ NORMALIZE INPUT
+    // =========================
+    let {
+      qrData,
+      scannedByUserId,
+      scannedByWallet,
+    } = body;
+
+    scannedByUserId = scannedByUserId || null;
+    scannedByWallet = scannedByWallet || null;
+
+    console.log("📥 Incoming:", {
+      qrData,
+      scannedByUserId,
+      scannedByWallet,
+    });
 
     if (!qrData) throw new Error("Missing QR data");
 
-    console.log("🔍 Verifying QR...");
-
-    // ✅ HARD REQUIRE USER (prevents infinite increment bug)
-    if (!scannedByUserId) {
-      throw new Error("Missing scannedByUserId");
+    // =========================
+    // ✅ REQUIRE AT LEAST ONE IDENTITY
+    // =========================
+    if (!scannedByUserId && !scannedByWallet) {
+      throw new Error("Missing scanner identity (user or wallet required)");
     }
 
-    // ✅ Parse QR
+    console.log("🔍 Verifying QR...");
+
+    // =========================
+    // ✅ PARSE QR
+    // =========================
     let parsedData;
     try {
       parsedData =
         typeof qrData === "string" ? JSON.parse(qrData) : qrData;
     } catch {
-      await logScan(supabase, null, scannedByUserId, false, "Invalid QR format");
+      await logScan(
+        supabase,
+        null,
+        scannedByUserId,
+        scannedByWallet,
+        false,
+        "Invalid QR format"
+      );
+
       return new Response(
         JSON.stringify({ success: false, error: "Invalid QR format" }),
         { headers: corsHeaders }
       );
     }
 
-    // ✅ Signature check
+    // =========================
+    // ✅ SIGNATURE CHECK
+    // =========================
     if (parsedData.app !== APP_SIGNATURE) {
-      await logScan(supabase, null, scannedByUserId, false, "Invalid signature");
+      await logScan(
+        supabase,
+        null,
+        scannedByUserId,
+        scannedByWallet,
+        false,
+        "Invalid signature"
+      );
+
       return new Response(
         JSON.stringify({ success: false, error: "Not a T2P QR" }),
         { headers: corsHeaders }
       );
     }
 
-    const { token } = parsedData;
+    const token = parsedData?.token?.trim();
 
     if (!token) {
-      await logScan(supabase, null, scannedByUserId, false, "Missing token");
+      await logScan(
+        supabase,
+        null,
+        scannedByUserId,
+        scannedByWallet,
+        false,
+        "Missing token"
+      );
       throw new Error("Invalid QR: missing token");
     }
 
     console.log("🔑 Token:", token);
 
-    // ✅ DB lookup
+    // =========================
+    // ✅ DB LOOKUP
+    // =========================
     const { data: qrRecord, error: lookupError } = await supabase
       .from("user_qr_codes")
       .select("*")
-      .eq("qr_token", token.trim())
+      .eq("qr_token", token)
       .maybeSingle();
 
-    console.log("📦 DB response:", {
-      found: !!qrRecord,
-      error: lookupError?.message || null,
-    });
-
     if (lookupError) {
-      console.error("❌ DB error:", lookupError.message);
+      console.error("DB error:", lookupError.message);
       throw new Error("Database query failed");
     }
 
     if (!qrRecord) {
-      await logScan(supabase, null, scannedByUserId, false, "QR not found");
+      await logScan(
+        supabase,
+        null,
+        scannedByUserId,
+        scannedByWallet,
+        false,
+        "QR not found"
+      );
+
       return new Response(
         JSON.stringify({ success: false, error: "Invalid or revoked QR" }),
         { headers: corsHeaders }
       );
     }
 
-    console.log("✅ QR FOUND:", {
-      id: qrRecord.id,
-      user: qrRecord.user_id,
-      active: qrRecord.is_active,
-      scan_count: qrRecord.scan_count,
-    });
-
+    // =========================
     // ✅ ACTIVE CHECK
+    // =========================
     if (!qrRecord.is_active) {
-      await logScan(supabase, qrRecord.id, scannedByUserId, false, "Deactivated");
+      await logScan(
+        supabase,
+        qrRecord.id,
+        scannedByUserId,
+        scannedByWallet,
+        false,
+        "Deactivated"
+      );
+
       return new Response(
         JSON.stringify({ success: false, error: "QR is deactivated" }),
         { headers: corsHeaders }
@@ -129,35 +182,35 @@ serve(async (req) => {
     }
 
     // =========================
-    // ✅ COOLDOWN CHECK (STRICT)
+    // ✅ COOLDOWN CHECK (SMART)
     // =========================
-    const { data: existingScan, error: scanError } = await supabase
+    let query = supabase
       .from("qr_scan_logs")
-      .select("id, scanned_at")
+      .select("scanned_at")
       .eq("qr_code_id", qrRecord.id)
-      .eq("scanned_by_user_id", scannedByUserId)
       .order("scanned_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(1);
 
-    if (scanError) {
-      console.error("❌ Scan lookup failed:", scanError.message);
+    if (scannedByUserId) {
+      query = query.eq("scanned_by_user_id", scannedByUserId);
+    } else {
+      query = query.eq("scanned_by_wallet", scannedByWallet);
     }
 
+    const { data: existingScan } = await query.maybeSingle();
+
     if (existingScan) {
-      const lastScanTime = new Date(existingScan.scanned_at).getTime();
-      const now = Date.now();
-      const diffSeconds = (now - lastScanTime) / 1000;
+      const diff =
+        (Date.now() - new Date(existingScan.scanned_at).getTime()) / 1000;
 
-      if (diffSeconds < 30) {
-        console.log("⛔ Duplicate scan blocked");
-
+      if (diff < 30) {
         await logScan(
           supabase,
           qrRecord.id,
           scannedByUserId,
+          scannedByWallet,
           false,
-          "Cooldown: duplicate scan"
+          "Cooldown"
         );
 
         return new Response(
@@ -165,9 +218,7 @@ serve(async (req) => {
             success: false,
             error: "Please wait before scanning again",
           }),
-          {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
+          { headers: corsHeaders }
         );
       }
     }
@@ -175,19 +226,10 @@ serve(async (req) => {
     // =========================
     // ✅ ATOMIC INCREMENT
     // =========================
-    const { error: updateError } = await supabase.rpc("increment_scan_count", {
+    await supabase.rpc("increment_scan_count", {
       row_id: qrRecord.id,
     });
 
-    if (updateError) {
-      console.error("❌ Update failed:", updateError.message);
-    } else {
-      console.log("✅ Scan updated");
-    }
-
-    // =========================
-    // ✅ FETCH TRUE COUNT
-    // =========================
     const { data: updatedRecord } = await supabase
       .from("user_qr_codes")
       .select("scan_count")
@@ -197,10 +239,19 @@ serve(async (req) => {
     const finalScanCount =
       updatedRecord?.scan_count ?? (qrRecord.scan_count || 0) + 1;
 
-    // ✅ Log success
-    await logScan(supabase, qrRecord.id, scannedByUserId, true, null);
+    // =========================
+    // ✅ SUCCESS LOG
+    // =========================
+    await logScan(
+      supabase,
+      qrRecord.id,
+      scannedByUserId,
+      scannedByWallet,
+      true,
+      null
+    );
 
-    console.log("🎉 VERIFIED:", {
+    console.log("✅ VERIFIED:", {
       user: qrRecord.user_id,
       scanCount: finalScanCount,
     });
@@ -211,7 +262,6 @@ serve(async (req) => {
         verified: true,
         user: qrRecord.user_id,
         scanCount: finalScanCount,
-        message: "QR verified successfully",
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

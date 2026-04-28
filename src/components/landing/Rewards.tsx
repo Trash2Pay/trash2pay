@@ -4,7 +4,7 @@ const rewardTiers = [
   {
     icon: Gift,
     name: "Regular Pickup",
-    tokens: "10",
+    tokens: "2",
     description: "Earn tokens for every verified waste pickup",
     color: "border-primary/30 bg-primary/5",
     iconBg: "bg-primary/10 text-primary",
@@ -12,7 +12,7 @@ const rewardTiers = [
   {
     icon: Star,
     name: "Recyclables Bonus",
-    tokens: "+5",
+    tokens: "+2",
     description: "Extra tokens for properly sorted recyclables",
     color: "border-eco-sky/30 bg-eco-sky/5",
     iconBg: "bg-eco-sky/20 text-eco-sky",
@@ -20,7 +20,7 @@ const rewardTiers = [
   {
     icon: Flame,
     name: "Streak Bonus",
-    tokens: "2x",
+    tokens: "+2",
     description: "Double rewards for 7-day pickup streaks",
     color: "border-eco-gold/30 bg-eco-gold/5",
     iconBg: "bg-eco-gold/20 text-eco-gold",
@@ -28,7 +28,7 @@ const rewardTiers = [
   {
     icon: Trophy,
     name: "Referral Rewards",
-    tokens: "25",
+    tokens: "2",
     description: "Tokens for every friend who joins Trash2Pay",
     color: "border-accent/30 bg-accent/5",
     iconBg: "bg-accent/20 text-accent",
@@ -83,17 +83,17 @@ const Rewards = () => {
             </p>
             <div className="flex flex-wrap justify-center gap-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-primary">$0.10</div>
+                <div className="text-2xl font-bold text-primary">$0.000004708</div>
                 <div className="text-sm text-muted-foreground">Current Value</div>
               </div>
               <div className="w-px h-12 bg-border hidden sm:block" />
               <div className="text-center">
-                <div className="text-2xl font-bold text-primary">1M+</div>
+                <div className="text-2xl font-bold text-primary">5M+</div>
                 <div className="text-sm text-muted-foreground">Tokens in Circulation</div>
               </div>
               <div className="w-px h-12 bg-border hidden sm:block" />
               <div className="text-center">
-                <div className="text-2xl font-bold text-primary">50K+</div>
+                <div className="text-2xl font-bold text-primary">9</div>
                 <div className="text-sm text-muted-foreground">Active Holders</div>
               </div>
             </div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useCollectorPickups, type PickupRow } from "@/hooks/usePickups";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,79 +33,30 @@ import { QRScanner } from "@/components/collector/QRScanner";
 import { UserQRCode } from "@/components/qr/UserQRCode";
 import { WalletBalanceCard } from "@/components/payments/WalletBalanceCard";
 
-// Mock data for pickup requests
-const mockRequests = [
-  {
-    id: "1",
-    userName: "John Doe",
-    address: "123 Green Street, Eco City",
-    wasteType: "Recyclables",
-    scheduledTime: "10:30 AM",
-    scheduledDate: "2024-01-18",
-    status: "pending",
-    phone: "+1 234 567 8900",
-    notes: "Please collect from the back gate",
-  },
-  {
-    id: "2",
-    userName: "Jane Smith",
-    address: "456 Sustainable Ave, Green Town",
-    wasteType: "E-Waste",
-    scheduledTime: "2:00 PM",
-    scheduledDate: "2024-01-18",
-    status: "pending",
-    phone: "+1 234 567 8901",
-    notes: "Old laptop and phone",
-  },
-  {
-    id: "3",
-    userName: "Mike Johnson",
-    address: "789 Recycle Road, Cleanville",
-    wasteType: "Organic",
-    scheduledTime: "4:30 PM",
-    scheduledDate: "2024-01-18",
-    status: "assigned",
-    phone: "+1 234 567 8902",
-    notes: "",
-  },
-];
-
-const completedPickups = [
-  {
-    id: "4",
-    userName: "Sarah Wilson",
-    wasteType: "Recyclables",
-    date: "2024-01-17",
-    tokensEarned: 8,
-  },
-  {
-    id: "5",
-    userName: "Tom Brown",
-    wasteType: "General Waste",
-    date: "2024-01-17",
-    tokensEarned: 5,
-  },
-  {
-    id: "6",
-    userName: "Emily Davis",
-    wasteType: "E-Waste",
-    date: "2024-01-16",
-    tokensEarned: 12,
-  },
-];
+// Pickup data is fetched from the database via useCollectorPickups()
 
 const CollectorContent = () => {
-  const [selectedRequest, setSelectedRequest] = useState<typeof mockRequests[0] | null>(null);
+  const { available, assigned, completed, loading, acceptPickup, completePickup, formatWasteLabel } = useCollectorPickups();
+  const [selectedRequest, setSelectedRequest] = useState<PickupRow | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const [collectorTokens, setCollectorTokens] = useState(890);
-
-  const handleAcceptPickup = (request: typeof mockRequests[0]) => {
-    toast({
-      title: "Pickup Accepted!",
-      description: `You've been assigned to collect from ${request.userName}`,
-    });
-    setIsDetailsOpen(false);
+  const allRequests = [...available, ...assigned];
+  const handleAcceptPickup = async (request: PickupRow) => {
+    try {
+      await acceptPickup(request.id);
+      toast({
+        title: "Pickup Accepted!",
+        description: `You've been assigned to collect from ${request.user_name || "user"}`,
+      });
+      setIsDetailsOpen(false);
+    } catch (err: any) {
+      toast({
+        title: "Failed to accept",
+        description: err.message || "Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCompletePickup = () => {
@@ -112,9 +64,12 @@ const CollectorContent = () => {
     setIsQRScannerOpen(true);
   };
 
-  const handlePickupVerified = (pickupData: any, reward: number) => {
+  const handlePickupVerified = async (pickupData: any, reward: number) => {
     const collectorReward = Math.round(reward * 0.3);
     setCollectorTokens((prev) => prev + collectorReward);
+    if (selectedRequest) {
+      try { await completePickup(selectedRequest.id, reward); } catch (e) { console.error(e); }
+    }
     toast({
       title: "Pickup Verified! 🎉",
       description: `You earned ${collectorReward} T2P Units!`,
@@ -183,6 +138,7 @@ const CollectorContent = () => {
             </CardContent>
           </Card>
 
+          
           <Card className="gradient-card border-border/50">
             <CardContent className="p-4 md:p-6">
               <div className="flex items-center gap-3 mb-3">
@@ -190,7 +146,7 @@ const CollectorContent = () => {
                   <Package className="w-5 h-5 text-primary" />
                 </div>
               </div>
-              <div className="text-2xl md:text-3xl font-bold">3</div>
+              <div className="text-2xl md:text-3xl font-bold">{available.length}</div>
               <div className="text-xs md:text-sm text-muted-foreground">Pending Pickups</div>
             </CardContent>
           </Card>
@@ -202,7 +158,7 @@ const CollectorContent = () => {
                   <CheckCircle2 className="w-5 h-5 text-eco-leaf" />
                 </div>
               </div>
-              <div className="text-2xl md:text-3xl font-bold">47</div>
+              <div className="text-2xl md:text-3xl font-bold">{completed.length}</div>
               <div className="text-xs md:text-sm text-muted-foreground">Completed</div>
             </CardContent>
           </Card>
@@ -230,56 +186,75 @@ const CollectorContent = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {mockRequests.map((request) => (
-                    <div
-                      key={request.id}
-                      className="p-4 rounded-xl bg-muted/30 border border-border/50 hover:border-primary/30 transition-all cursor-pointer group"
-                      onClick={() => {
-                        setSelectedRequest(request);
-                        setIsDetailsOpen(true);
-                      }}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                              <User className="w-5 h-5 text-primary" />
+                  {loading && (
+                    <div className="text-sm text-muted-foreground text-center py-8">Loading requests...</div>
+                  )}
+                  {!loading && allRequests.length === 0 && (
+                    <div className="text-sm text-muted-foreground text-center py-8">
+                      No pickup requests available right now.
+                    </div>
+                  )}
+                  {allRequests.map((request) => {
+                    const wasteLabel = formatWasteLabel(request.waste_type);
+                    const created = new Date(request.created_at);
+                    const dateStr = request.scheduled_date || created.toISOString().split("T")[0];
+                    const timeStr = created.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+                    return (
+                      <div
+                        key={request.id}
+                        className="p-4 rounded-xl bg-muted/30 border border-border/50 hover:border-primary/30 transition-all cursor-pointer group"
+                        onClick={() => {
+                          setSelectedRequest(request);
+                          setIsDetailsOpen(true);
+                        }}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                <User className="w-5 h-5 text-primary" />
+                              </div>
+                              <div>
+                                <div className="font-semibold">{request.user_name}</div>
+                                <Badge className={`text-xs ${getWasteTypeColor(wasteLabel)}`}>
+                                  {wasteLabel}
+                                </Badge>
+                              </div>
                             </div>
-                            <div>
-                              <div className="font-semibold">{request.userName}</div>
-                              <Badge className={`text-xs ${getWasteTypeColor(request.wasteType)}`}>
-                                {request.wasteType}
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                              <MapPin className="w-4 h-4" />
+                              <span className="line-clamp-1">{request.address}</span>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {dateStr}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {timeStr}
+                              </span>
+                              <Badge variant="outline" className="text-xs capitalize">
+                                {request.status}
                               </Badge>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                            <MapPin className="w-4 h-4" />
-                            <span className="line-clamp-1">{request.address}</span>
-                          </div>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
-                              {request.scheduledDate}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {request.scheduledTime}
-                            </span>
-                          </div>
+                          {request.status === "pending" && (
+                            <Button
+                              size="sm"
+                              className="gradient-eco border-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAcceptPickup(request);
+                              }}
+                            >
+                              Accept
+                            </Button>
+                          )}
                         </div>
-                        <Button
-                          size="sm"
-                          className="gradient-eco border-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAcceptPickup(request);
-                          }}
-                        >
-                          Accept
-                        </Button>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -314,18 +289,21 @@ const CollectorContent = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {completedPickups.map((pickup) => (
+                  {completed.length === 0 && (
+                    <div className="text-xs text-muted-foreground text-center py-4">No completed pickups yet.</div>
+                  )}
+                  {completed.map((pickup) => (
                     <div
                       key={pickup.id}
                       className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
                     >
                       <div>
-                        <div className="font-medium text-sm">{pickup.userName}</div>
-                        <div className="text-xs text-muted-foreground">{pickup.wasteType}</div>
+                        <div className="font-medium text-sm">{pickup.user_name}</div>
+                        <div className="text-xs text-muted-foreground">{formatWasteLabel(pickup.waste_type)}</div>
                       </div>
                       <div className="flex items-center gap-1 text-eco-gold font-semibold text-sm">
                         <Coins className="w-3 h-3" />
-                        +{pickup.tokensEarned}
+                        +{Number(pickup.reward_tokens) || 0}
                       </div>
                     </div>
                   ))}
@@ -353,9 +331,9 @@ const CollectorContent = () => {
                   <User className="w-7 h-7 text-primary" />
                 </div>
                 <div>
-                  <div className="font-semibold text-lg">{selectedRequest.userName}</div>
-                  <Badge className={getWasteTypeColor(selectedRequest.wasteType)}>
-                    {selectedRequest.wasteType}
+                  <div className="font-semibold text-lg">{selectedRequest.user_name}</div>
+                  <Badge className={getWasteTypeColor(formatWasteLabel(selectedRequest.waste_type))}>
+                    {formatWasteLabel(selectedRequest.waste_type)}
                   </Badge>
                 </div>
               </div>
@@ -371,19 +349,21 @@ const CollectorContent = () => {
                 <div className="flex items-start gap-3">
                   <Clock className="w-5 h-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <div className="text-sm font-medium">Scheduled Time</div>
+                    <div className="text-sm font-medium">Scheduled</div>
                     <div className="text-sm text-muted-foreground">
-                      {selectedRequest.scheduledDate} at {selectedRequest.scheduledTime}
+                      {selectedRequest.scheduled_date || new Date(selectedRequest.created_at).toLocaleDateString()}
                     </div>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <Phone className="w-5 h-5 text-muted-foreground mt-0.5" />
-                  <div>
-                    <div className="text-sm font-medium">Contact</div>
-                    <div className="text-sm text-muted-foreground">{selectedRequest.phone}</div>
+                {selectedRequest.user_phone && (
+                  <div className="flex items-start gap-3">
+                    <Phone className="w-5 h-5 text-muted-foreground mt-0.5" />
+                    <div>
+                      <div className="text-sm font-medium">Contact</div>
+                      <div className="text-sm text-muted-foreground">{selectedRequest.user_phone}</div>
+                    </div>
                   </div>
-                </div>
+                )}
                 {selectedRequest.notes && (
                   <div className="p-3 rounded-lg bg-muted/50">
                     <div className="text-sm font-medium mb-1">Notes</div>

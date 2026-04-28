@@ -55,7 +55,7 @@ const DashboardContent = () => {
   const [wasteType, setWasteType] = useState<string>("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const handleRequestPickup = () => {
+  const handleRequestPickup = async () => {
     if (!address || !wasteType) {
       toast({
         title: "Missing Information",

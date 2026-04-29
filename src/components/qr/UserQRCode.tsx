@@ -5,7 +5,18 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useWallet } from '@/contexts/WalletContext';
 import { supabase } from '@/integrations/supabase/client';
-import { QrCode, Printer, RefreshCw, Download, Shield, CheckCircle2 } from 'lucide-react';
+import { QrCode, Printer, RefreshCw, Download, Shield, CheckCircle2, AlertTriangle } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import QRCode from 'qrcode';
 
 interface UserQRCodeProps {
@@ -290,11 +301,60 @@ export const UserQRCode: React.FC<UserQRCodeProps> = ({ className }) => {
           variant="ghost"
           size="sm"
           className="w-full"
-          disabled={isLoading}
+          disabled={isLoading || isRevoking}
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
           Regenerate QR Code
         </Button>
+
+        {qrDataUrl && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="w-full"
+                disabled={isLoading || isRevoking}
+              >
+                <AlertTriangle className="h-4 w-4 mr-2" />
+                Revoke QR Code (Lost/Stolen)
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Revoke Your QR Code?</AlertDialogTitle>
+                <AlertDialogDescription className="space-y-2">
+                  <p>
+                    This action will permanently deactivate your current QR code. 
+                    It will no longer be valid for waste disposal verification.
+                  </p>
+                  <p className="font-medium text-destructive">
+                    Use this only if your QR code was lost, stolen, or compromised.
+                  </p>
+                  <p>
+                    After revoking, you can generate a new QR code immediately.
+                  </p>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleRevokeQR}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {isRevoking ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Revoking...
+                    </>
+                  ) : (
+                    'Yes, Revoke QR Code'
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
 
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-sm">
           <p className="font-medium text-amber-800 dark:text-amber-200 mb-1">
@@ -305,6 +365,7 @@ export const UserQRCode: React.FC<UserQRCodeProps> = ({ className }) => {
             <li>• Collectors will scan it to verify waste disposal</li>
             <li>• You'll earn T2P Unit for each verified disposal</li>
             <li>• Never share your QR code with others</li>
+            <li>• If lost or stolen, revoke and generate a new one</li>
           </ul>
         </div>
       </CardContent>

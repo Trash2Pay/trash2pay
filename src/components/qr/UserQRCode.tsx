@@ -46,6 +46,7 @@ export const UserQRCode: React.FC<UserQRCodeProps> = ({ className }) => {
     try {
       const { data, error } = await supabase.functions.invoke('generate-qr-code', {
         body: {
+          userId: walletProfile.id,
           walletHandle: walletProfile.handle,
           userRole: userRole,
         },
@@ -182,7 +183,7 @@ export const UserQRCode: React.FC<UserQRCodeProps> = ({ className }) => {
         </head>
         <body>
           <div class="container">
-            <div class="logo">🌱 Trash2Cash</div>
+            <div class="logo">🌱 Trash2Pay</div>
             <div class="subtitle">Waste Disposal Verification</div>
             
             <div class="qr-code">

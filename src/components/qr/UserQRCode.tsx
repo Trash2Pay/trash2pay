@@ -29,28 +29,26 @@ export const UserQRCode: React.FC<UserQRCodeProps> = ({ className }) => {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [qrToken, setQrToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRevoking, setIsRevoking] = useState(false);
   const [scanCount, setScanCount] = useState(0);
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const userId = localStorage.getItem('user_id');
-    if (walletProfile?.handle && userId) {
+    if (walletProfile?.handle) {
       fetchOrGenerateQR();
     }
-  }, [walletProfile?.handle, userRole]);
+  }, [walletProfile?.handle]);
 
   const fetchOrGenerateQR = async () => {
     if (!walletProfile?.handle) return;
-    const userId = localStorage.getItem('user_id');
+
     setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-qr-code', {
-        
         body: {
-  userId,
-  walletHandle: walletProfile.handle,
-  userRole: userRole,
-},
+          walletHandle: walletProfile.handle,
+          userRole: userRole,
+        },
       });
 
       if (error) throw error;
@@ -184,7 +182,7 @@ export const UserQRCode: React.FC<UserQRCodeProps> = ({ className }) => {
         </head>
         <body>
           <div class="container">
-            <div class="logo">🌱 Trash2Pay</div>
+            <div class="logo">🌱 Trash2Cash</div>
             <div class="subtitle">Waste Disposal Verification</div>
             
             <div class="qr-code">
@@ -221,7 +219,7 @@ export const UserQRCode: React.FC<UserQRCodeProps> = ({ className }) => {
     if (!qrDataUrl) return;
 
     const link = document.createElement('a');
-    link.download = `trash2pay-qr-${walletProfile?.handle}.png`;
+    link.download = `trash2cash-qr-${walletProfile?.handle}.png`;
     link.href = qrDataUrl;
     link.click();
 
@@ -229,6 +227,44 @@ export const UserQRCode: React.FC<UserQRCodeProps> = ({ className }) => {
       title: 'Downloaded!',
       description: 'Your QR code has been saved.',
     });
+  };
+
+  const handleRevokeQR = async () => {
+    if (!walletProfile?.handle) return;
+
+    setIsRevoking(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('revoke-qr-code', {
+        body: {
+          walletHandle: walletProfile.handle,
+          reason: 'User requested revocation',
+        },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      // Clear the current QR code display
+      setQrDataUrl(null);
+      setQrToken(null);
+
+      toast({
+        title: 'QR Code Revoked',
+        description: 'Your old QR code is now invalid. Generate a new one below.',
+      });
+
+      // Automatically generate a new QR code
+      await fetchOrGenerateQR();
+    } catch (err: any) {
+      console.error('Failed to revoke QR code:', err);
+      toast({
+        title: 'Revocation Failed',
+        description: err.message || 'Failed to revoke QR code',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRevoking(false);
+    }
   };
 
   if (!walletProfile) {
@@ -363,7 +399,7 @@ export const UserQRCode: React.FC<UserQRCodeProps> = ({ className }) => {
           <ul className="text-amber-700 dark:text-amber-300 space-y-1 text-xs">
             <li>• Print and paste this QR code on your waste bin</li>
             <li>• Collectors will scan it to verify waste disposal</li>
-            <li>• You'll earn T2P Unit for each verified disposal</li>
+            <li>• You'll earn T2P Units for each verified disposal</li>
             <li>• Never share your QR code with others</li>
             <li>• If lost or stolen, revoke and generate a new one</li>
           </ul>

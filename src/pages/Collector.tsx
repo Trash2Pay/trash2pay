@@ -32,11 +32,13 @@ import { WalletButton } from "@/components/wallets/WalletButton";
 import { QRScanner } from "@/components/collector/QRScanner";
 import { UserQRCode } from "@/components/qr/UserQRCode";
 import { WalletBalanceCard } from "@/components/payments/WalletBalanceCard";
+import { useTokenBalance } from "@/hooks/useTokenBalance";
 
 // Pickup data is fetched from the database via useCollectorPickups()
 
 const CollectorContent = () => {
   const { available, assigned, completed, loading, acceptPickup, completePickup, formatWasteLabel } = useCollectorPickups();
+  const { balance: t2pBalance, totalEarned, refresh: refreshBalance } = useTokenBalance();
   const [selectedRequest, setSelectedRequest] = useState<PickupRow | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
@@ -115,7 +117,7 @@ const CollectorContent = () => {
               </Badge>
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-eco-gold/10 border border-eco-gold/20">
                 <Coins className="w-4 h-4 text-eco-gold" />
-                <span className="font-semibold text-eco-gold">{collectorTokens} T2P</span>
+                <span className="font-semibold text-eco-gold">{t2pBalance.toLocaleString()} T2P</span>
               </div>
               <WalletButton />
             </div>
@@ -133,8 +135,8 @@ const CollectorContent = () => {
                   <Coins className="w-5 h-5 text-eco-gold" />
                 </div>
               </div>
-              <div className="text-2xl md:text-3xl font-bold">890</div>
-              <div className="text-xs md:text-sm text-muted-foreground">T2P Earned</div>
+              <div className="text-2xl md:text-3xl font-bold">{totalEarned.toLocaleString()}</div>
+              <div className="text-xs md:text-sm text-muted-foreground">T2P Units Earned</div>
             </CardContent>
           </Card>
 

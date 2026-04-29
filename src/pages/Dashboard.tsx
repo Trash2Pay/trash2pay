@@ -44,12 +44,14 @@ import { WalletButton } from "@/components/wallets/WalletButton";
 import { useWallet } from "@/contexts/WalletContext";
 import { UserQRCode } from "@/components/qr/UserQRCode";
 import { WalletBalanceCard } from "@/components/payments/WalletBalanceCard";
+import { useTokenBalance } from "@/hooks/useTokenBalance";
 
 // Fetch pickups from database
 
 const DashboardContent = () => {
   const { walletProfile } = useWallet();
   const { pickups, loading, createPickup, formatWasteLabel } = useMyPickups();
+  const { balance: t2pBalance } = useTokenBalance();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [address, setAddress] = useState("");
   const [wasteType, setWasteType] = useState<string>("");
@@ -149,7 +151,7 @@ const getStatusBadge = (status: string) => {
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-eco-gold/10 border border-eco-gold/20">
                 <Coins className="w-4 h-4 text-eco-gold" />
-                <span className="font-semibold text-eco-gold">245 T2P</span>
+                <span className="font-semibold text-eco-gold">{t2cBalance.toLocaleString()} T2P</span>
               </div>
               <WalletButton />
             </div>
@@ -174,7 +176,7 @@ const getStatusBadge = (status: string) => {
                 </div>
                 <TrendingUp className="w-5 h-5 text-primary" />
               </div>
-              <div className="text-3xl font-bold mb-1">245</div>
+              <div className="text-3xl font-bold mb-1">{t2cBalance.toLocaleString()}</div>
               <div className="text-sm text-muted-foreground">T2P Units</div>
             </CardContent>
           </Card>

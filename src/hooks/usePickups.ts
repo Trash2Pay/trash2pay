@@ -34,48 +34,39 @@ const formatWasteLabel = (t: string) => {
   }
 };
 
-async function attachProfiles(rows: PickupRow[]): Promise<PickupRow[]> {
-  const userIds = Array.from(new Set(rows.map(r => r.user_id)));
-  if (userIds.length === 0) return rows;
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, full_name, phone")
-    .in("id", userIds);
-  const map = new Map((profiles || []).map(p => [p.id, p]));
-  return rows.map(r => ({
-    ...r,
-    user_name: map.get(r.user_id)?.full_name || "Anonymous User",
-    user_phone: map.get(r.user_id)?.phone || "",
-  }));
+async function callApi(action: string, walletHandle: string, extra: Record<string, any> = {}) {
+  const { data, error } = await supabase.functions.invoke("pickups-api", {
+    body: { action, walletHandle, ...extra },
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data;
 }
 
-/** Pickups owned by the current user (Dashboard view). */
+/** Pickups owned by the current wallet user (Dashboard view). */
 export function useMyPickups() {
   const { walletProfile } = useWallet();
+  const walletHandle = walletProfile?.handle;
   const [pickups, setPickups] = useState<PickupRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchPickups = useCallback(async () => {
-    setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    if (!walletHandle) {
       setPickups([]);
       setLoading(false);
       return;
     }
-    const { data, error } = await supabase
-      .from("pickups")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-    if (error) {
-      console.error("fetch pickups", error);
+    setLoading(true);
+    try {
+      const data = await callApi("list_my", walletHandle);
+      setPickups((data?.pickups || []) as PickupRow[]);
+    } catch (e) {
+      console.error("fetch pickups", e);
       setPickups([]);
-    } else {
-      setPickups((data || []) as PickupRow[]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }, [walletProfile?.handle]);
+  }, [walletHandle]);
 
   useEffect(() => {
     fetchPickups();
@@ -92,23 +83,10 @@ export function useMyPickups() {
     notes?: string;
     scheduled_date?: string;
   }) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Not authenticated");
-    const { data, error } = await supabase
-      .from("pickups")
-      .insert([{
-        user_id: user.id,
-        address: input.address,
-        waste_type: input.waste_type,
-        notes: input.notes || null,
-        scheduled_date: input.scheduled_date || null,
-        status: "pending" as const,
-      }])
-      .select()
-      .single();
-    if (error) throw error;
+    if (!walletHandle) throw new Error("Wallet not connected");
+    const data = await callApi("create", walletHandle, input);
     await fetchPickups();
-    return data;
+    return data?.pickup;
   };
 
   return { pickups, loading, refetch: fetchPickups, createPickup, formatWasteLabel };
@@ -116,31 +94,31 @@ export function useMyPickups() {
 
 /** Pickups visible to a collector: pending (available) + assigned/completed by them. */
 export function useCollectorPickups() {
+  const { walletProfile } = useWallet();
+  const walletHandle = walletProfile?.handle;
   const [available, setAvailable] = useState<PickupRow[]>([]);
   const [assigned, setAssigned] = useState<PickupRow[]>([]);
   const [completed, setCompleted] = useState<PickupRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
-    setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    if (!walletHandle) {
       setAvailable([]); setAssigned([]); setCompleted([]);
       setLoading(false);
       return;
     }
-
-    const [pendingRes, assignedRes, completedRes] = await Promise.all([
-      supabase.from("pickups").select("*").eq("status", "pending").order("created_at", { ascending: false }),
-      supabase.from("pickups").select("*").eq("collector_id", user.id).in("status", ["accepted", "in_progress"]).order("created_at", { ascending: false }),
-      supabase.from("pickups").select("*").eq("collector_id", user.id).eq("status", "completed").order("completed_at", { ascending: false }).limit(10),
-    ]);
-
-    setAvailable(await attachProfiles((pendingRes.data || []) as PickupRow[]));
-    setAssigned(await attachProfiles((assignedRes.data || []) as PickupRow[]));
-    setCompleted(await attachProfiles((completedRes.data || []) as PickupRow[]));
-    setLoading(false);
-  }, []);
+    setLoading(true);
+    try {
+      const data = await callApi("list_collector", walletHandle);
+      setAvailable((data?.available || []) as PickupRow[]);
+      setAssigned((data?.assigned || []) as PickupRow[]);
+      setCompleted((data?.completed || []) as PickupRow[]);
+    } catch (e) {
+      console.error("fetch collector pickups", e);
+    } finally {
+      setLoading(false);
+    }
+  }, [walletHandle]);
 
   useEffect(() => {
     fetchAll();
@@ -152,27 +130,14 @@ export function useCollectorPickups() {
   }, [fetchAll]);
 
   const acceptPickup = async (pickupId: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Not authenticated");
-    const { error } = await supabase
-      .from("pickups")
-      .update({ collector_id: user.id, status: "accepted" })
-      .eq("id", pickupId)
-      .eq("status", "pending");
-    if (error) throw error;
+    if (!walletHandle) throw new Error("Wallet not connected");
+    await callApi("accept", walletHandle, { pickupId });
     await fetchAll();
   };
 
   const completePickup = async (pickupId: string, reward_tokens?: number) => {
-    const { error } = await supabase
-      .from("pickups")
-      .update({
-        status: "completed",
-        completed_at: new Date().toISOString(),
-        ...(reward_tokens !== undefined ? { reward_tokens } : {}),
-      })
-      .eq("id", pickupId);
-    if (error) throw error;
+    if (!walletHandle) throw new Error("Wallet not connected");
+    await callApi("complete", walletHandle, { pickupId, reward_tokens });
     await fetchAll();
   };
 

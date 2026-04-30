@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useMyPickups, type WasteType } from "@/hooks/usePickups";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,51 +44,20 @@ import { WalletButton } from "@/components/wallets/WalletButton";
 import { useWallet } from "@/contexts/WalletContext";
 import { UserQRCode } from "@/components/qr/UserQRCode";
 import { WalletBalanceCard } from "@/components/payments/WalletBalanceCard";
+import { useTokenBalance } from "@/hooks/useTokenBalance";
 
-// Mock data
-const mockPickups = [
-  {
-    id: "1",
-    date: "2024-01-15",
-    time: "10:30 AM",
-    status: "completed",
-    wasteType: "Recyclables",
-    tokens: 15,
-  },
-  {
-    id: "2",
-    date: "2024-01-12",
-    time: "2:00 PM",
-    status: "completed",
-    wasteType: "General Waste",
-    tokens: 10,
-  },
-  {
-    id: "3",
-    date: "2024-01-10",
-    time: "9:00 AM",
-    status: "completed",
-    wasteType: "Organic",
-    tokens: 12,
-  },
-  {
-    id: "4",
-    date: "2024-01-18",
-    time: "11:00 AM",
-    status: "pending",
-    wasteType: "Recyclables",
-    tokens: 0,
-  },
-];
+// Fetch pickups from database
 
 const DashboardContent = () => {
   const { walletProfile } = useWallet();
+  const { pickups, loading, createPickup, formatWasteLabel } = useMyPickups();
+  const { balance: t2pBalance } = useTokenBalance();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [address, setAddress] = useState("");
-  const [wasteType, setWasteType] = useState("");
+  const [wasteType, setWasteType] = useState<string>("");
   const [notes, setNotes] = useState("");
-
-  const handleRequestPickup = () => {
+  const [submitting, setSubmitting] = useState(false);
+  const handleRequestPickup = async () => {
     if (!address || !wasteType) {
       toast({
         title: "Missing Information",
@@ -97,23 +67,47 @@ const DashboardContent = () => {
       return;
     }
 
-    toast({
-      title: "Pickup Requested!",
-      description: "A collector will be assigned to your pickup soon.",
-    });
-    setIsDialogOpen(false);
-    setAddress("");
-    setWasteType("");
-    setNotes("");
+    try {
+      setSubmitting(true);
+      await createPickup({
+        address,
+        waste_type: wasteType as WasteType,
+        notes: notes || undefined,
+      });
+      toast({
+        title: "Pickup Requested!",
+        description: "A collector will be assigned to your pickup soon.",
+      });
+      setIsDialogOpen(false);
+      setAddress("");
+      setWasteType("");
+      setNotes("");
+    } catch (err: any) {
+      toast({
+        title: "Failed to create pickup",
+        description: err.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const getStatusBadge = (status: string) => {
+
+const getStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
         return (
           <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/10">
             <CheckCircle2 className="w-3 h-3 mr-1" />
             Completed
+          </Badge>
+        );
+      case "accepted":
+        return (
+          <Badge className="bg-eco-leaf/10 text-eco-leaf border-eco-leaf/20 hover:bg-eco-leaf/10">
+            <CheckCircle2 className="w-3 h-3 mr-1" />
+            Accepted
           </Badge>
         );
       case "in_progress":
@@ -157,7 +151,7 @@ const DashboardContent = () => {
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-eco-gold/10 border border-eco-gold/20">
                 <Coins className="w-4 h-4 text-eco-gold" />
-                <span className="font-semibold text-eco-gold">245 T2P</span>
+                <span className="font-semibold text-eco-gold">{t2pBalance.toLocaleString()} T2P</span>
               </div>
               <WalletButton />
             </div>
@@ -182,7 +176,7 @@ const DashboardContent = () => {
                 </div>
                 <TrendingUp className="w-5 h-5 text-primary" />
               </div>
-              <div className="text-3xl font-bold mb-1">245</div>
+              <div className="text-3xl font-bold mb-1">{t2pBalance.toLocaleString()}</div>
               <div className="text-sm text-muted-foreground">T2P Units</div>
             </CardContent>
           </Card>
@@ -194,7 +188,7 @@ const DashboardContent = () => {
                   <Recycle className="w-6 h-6 text-primary" />
                 </div>
               </div>
-              <div className="text-3xl font-bold mb-1">12</div>
+              <div className="text-3xl font-bold mb-1">{pickups.length}</div>
               <div className="text-sm text-muted-foreground">Total Pickups</div>
             </CardContent>
           </Card>
@@ -269,10 +263,10 @@ const DashboardContent = () => {
                             <SelectValue placeholder="Select waste type" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="recyclables">Recyclables (+5 bonus)</SelectItem>
+                            <SelectItem value="recyclables">Recyclables (+3 bonus)</SelectItem>
                             <SelectItem value="organic">Organic Waste</SelectItem>
                             <SelectItem value="general">General Waste</SelectItem>
-                            <SelectItem value="electronic">E-Waste (+10 bonus)</SelectItem>
+                            <SelectItem value="electronic">E-Waste (+4 bonus)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -290,8 +284,8 @@ const DashboardContent = () => {
                       <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                         Cancel
                       </Button>
-                      <Button className="gradient-eco border-0" onClick={handleRequestPickup}>
-                        Schedule Pickup
+                      <Button className="gradient-eco border-0" onClick={handleRequestPickup} disabled={submitting}>
+                        {submitting ? "Scheduling..." : "Schedule Pickup"}
                       </Button>
                     </div>
                   </DialogContent>
@@ -299,42 +293,55 @@ const DashboardContent = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {mockPickups.map((pickup) => (
-                    <div
-                      key={pickup.id}
-                      className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border/50 hover:border-primary/20 transition-colors"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                          <Recycle className="w-6 h-6 text-primary" />
-                        </div>
-                        <div>
-                          <div className="font-semibold">{pickup.wasteType}</div>
-                          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
-                              {pickup.date}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {pickup.time}
-                            </span>
+                  {loading && (
+                    <div className="text-sm text-muted-foreground text-center py-8">Loading pickups...</div>
+                  )}
+                  {!loading && pickups.length === 0 && (
+                    <div className="text-sm text-muted-foreground text-center py-8">
+                      No pickups yet. Click "Request Pickup" to schedule one.
+                    </div>
+                  )}
+                  {pickups.map((pickup) => {
+                    const created = new Date(pickup.created_at);
+                    const dateStr = pickup.scheduled_date || created.toISOString().split("T")[0];
+                    const timeStr = created.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+                    return (
+                      <div
+                        key={pickup.id}
+                        className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border/50 hover:border-primary/20 transition-colors"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                            <Recycle className="w-6 h-6 text-primary" />
                           </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        {pickup.status === "completed" && (
-                          <div className="text-right">
-                            <div className="flex items-center gap-1 text-eco-gold font-semibold">
-                              <Coins className="w-4 h-4" />
-                              +{pickup.tokens}
+                          <div>
+                            <div className="font-semibold">{formatWasteLabel(pickup.waste_type)}</div>
+                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {dateStr}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {timeStr}
+                              </span>
                             </div>
                           </div>
-                        )}
-                        {getStatusBadge(pickup.status)}
+                        </div>
+                        <div className="flex items-center gap-4">
+                          {pickup.status === "completed" && Number(pickup.reward_tokens) > 0 && (
+                            <div className="text-right">
+                              <div className="flex items-center gap-1 text-eco-gold font-semibold">
+                                <Coins className="w-4 h-4" />
+                                +{pickup.reward_tokens}
+                              </div>
+                            </div>
+                          )}
+                          {getStatusBadge(pickup.status)}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>

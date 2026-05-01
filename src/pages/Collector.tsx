@@ -217,7 +217,13 @@ const CollectorContent = () => {
                                 <User className="w-5 h-5 text-primary" />
                               </div>
                               <div>
-                                <div className="font-semibold">{request.user_name}</div>
+                                <div className="font-semibold">{request.user_name || "Anonymous User"}</div>
+                                {request.user_phone && (
+                                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                                    <Phone className="w-3 h-3" />
+                                    {request.user_phone}
+                                  </div>
+                                )}
                                 <Badge className={`text-xs ${getWasteTypeColor(wasteLabel)}`}>
                                   {wasteLabel}
                                 </Badge>

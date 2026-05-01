@@ -44,13 +44,14 @@ serve(async (req) => {
       if (!userIds.length) return rows;
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, full_name, phone")
+        .select("id, full_name, phone, nin")
         .in("id", userIds);
       const map = new Map((profiles || []).map((p) => [p.id, p]));
       return rows.map((r) => ({
         ...r,
         user_name: map.get(r.user_id)?.full_name || "Anonymous User",
         user_phone: map.get(r.user_id)?.phone || "",
+        user_nin: map.get(r.user_id)?.nin || "",
       }));
     };
 
@@ -66,8 +67,23 @@ serve(async (req) => {
       }
 
       case "create": {
-        const { address, waste_type, notes, scheduled_date } = body;
+        const { address, waste_type, notes, scheduled_date, full_name, phone, nin } = body;
         if (!address || !waste_type) return json({ error: "address and waste_type are required" }, 400);
+        if (!full_name || !phone) return json({ error: "Name and phone are required" }, 400);
+
+        // Update profile with the latest contact info supplied with this request
+        const profileUpdate: Record<string, any> = {
+          full_name,
+          phone,
+          address,
+        };
+        if (nin) profileUpdate.nin = nin;
+        const { error: updErr } = await supabase
+          .from("profiles")
+          .update(profileUpdate)
+          .eq("id", profileId);
+        if (updErr) console.warn("profile update warn:", updErr.message);
+
         const { data, error } = await supabase
           .from("pickups")
           .insert([{
@@ -83,6 +99,7 @@ serve(async (req) => {
         if (error) throw error;
         return json({ pickup: data });
       }
+
 
       case "list_collector": {
         const [pendingRes, assignedRes, completedRes] = await Promise.all([

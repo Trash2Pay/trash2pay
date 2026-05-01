@@ -53,15 +53,18 @@ const DashboardContent = () => {
   const { pickups, loading, createPickup, formatWasteLabel } = useMyPickups();
   const { balance: t2pBalance } = useTokenBalance();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [fullName, setFullName] = useState(walletProfile?.displayName || "");
+  const [phone, setPhone] = useState("");
+  const [nin, setNin] = useState("");
   const [address, setAddress] = useState("");
   const [wasteType, setWasteType] = useState<string>("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const handleRequestPickup = async () => {
-    if (!address || !wasteType) {
+    if (!fullName.trim() || !phone.trim() || !address || !wasteType) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields.",
+        description: "Please fill in all required fields Name, Phone, Address and Waste Type.",
         variant: "destructive",
       });
       return;
@@ -73,6 +76,9 @@ const DashboardContent = () => {
         address,
         waste_type: wasteType as WasteType,
         notes: notes || undefined,
+        full_name: fullName.trim(),
+        phone: phone.trim(),
+        nin: nin || undefined,
       });
       toast({
         title: "Pickup Requested!",
@@ -82,6 +88,8 @@ const DashboardContent = () => {
       setAddress("");
       setWasteType("");
       setNotes("");
+      setPhone("");
+      setNin("");
     } catch (err: any) {
       toast({
         title: "Failed to create pickup",
@@ -243,6 +251,37 @@ const getStatusBadge = (status: string) => {
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="fullName">Full Name *</Label>
+                        <Input
+                          id="fullName"
+                          placeholder="Your full name"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          maxLength={120}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Phone Number *</Label>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          placeholder="e.g. 080xxxxxxxx"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          maxLength={20}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="nin">NIN (Compulsory)</Label>
+                        <Input
+                          id="nin"
+                          placeholder="National Identification Number"
+                          value={nin}
+                          onChange={(e) => setNin(e.target.value.replace(/\D/g, ""))}
+                          maxLength={11}
+                        />
+                      </div>
                       <div className="space-y-2">
                         <Label htmlFor="address">Pickup Address *</Label>
                         <div className="relative">

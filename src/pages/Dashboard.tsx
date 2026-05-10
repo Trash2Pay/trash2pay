@@ -302,7 +302,7 @@ const getStatusBadge = (status: string) => {
                             <SelectValue placeholder="Select waste type" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="recyclables">Recyclables (+3 bonus)</SelectItem>
+                            <SelectItem value="recyclable">Recyclables (+3 bonus)</SelectItem>
                             <SelectItem value="organic">Organic Waste</SelectItem>
                             <SelectItem value="general">General Waste</SelectItem>
                             <SelectItem value="electronic">E-Waste (+4 bonus)</SelectItem>

@@ -42,7 +42,6 @@ const CollectorContent = () => {
   const [selectedRequest, setSelectedRequest] = useState<PickupRow | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
-  const [collectorTokens, setCollectorTokens] = useState(890);
   const allRequests = [...available, ...assigned];
   const handleAcceptPickup = async (request: PickupRow) => {
     try {

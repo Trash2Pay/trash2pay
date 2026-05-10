@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Wallet, ChevronDown, LogOut, Copy, Check } from 'lucide-react';
+import { Wallet, ChevronDown, LogOut, Copy, Check, LogIn } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,11 +10,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useWallet } from '@/contexts/WalletContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { ConnectWalletModal } from './ConnectWalletModal';
 import { toast } from '@/hooks/use-toast';
 
 export const WalletButton: React.FC = () => {
   const { isConnected, isConnecting, walletProfile, disconnect } = useWallet();
+  const { session, signOut } = useAuth();
+  const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -29,13 +33,25 @@ export const WalletButton: React.FC = () => {
     }
   };
 
-  const handleDisconnect = () => {
+  const handleDisconnect = async () => {
     disconnect();
-    toast({
-      title: "Wallet Disconnected",
-      description: "Your wallet has been disconnected",
-    });
+    await signOut();
+    toast({ title: "Signed out", description: "You have been signed out" });
+    navigate('/');
   };
+
+  if (!session) {
+    return (
+      <Button
+        onClick={() => navigate('/auth')}
+        variant="outline"
+        className="border-primary/30 hover:bg-primary/10"
+      >
+        <LogIn className="w-4 h-4 mr-2" />
+        Sign In
+      </Button>
+    );
+  }
 
   if (!isConnected) {
     return (

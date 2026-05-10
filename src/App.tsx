@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { WalletProvider } from "@/contexts/WalletContext";
-import Index from "./pages/Index";
+import Index from "./pages/index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Collector from "./pages/Collector";

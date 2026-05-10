@@ -212,7 +212,7 @@ Does this change affect health data?
 
 ```shellscript
 git push origin --delete feature/your-feature
-git branch -d feature/your-feature
+git branch -D feature/your-feature
 ```
 
 ---

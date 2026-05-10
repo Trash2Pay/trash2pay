@@ -21,6 +21,7 @@ export interface PickupRow {
   completed_at: string | null;
   user_name?: string;
   user_phone?: string;
+  user_nin?: string;
 }
 
 const formatWasteLabel = (t: string) => {
@@ -82,6 +83,9 @@ export function useMyPickups() {
     waste_type: WasteType;
     notes?: string;
     scheduled_date?: string;
+    full_name: string;
+    phone: string;
+    nin?: string;
   }) => {
     if (!walletHandle) throw new Error("Wallet not connected");
     const data = await callApi("create", walletHandle, input);

@@ -1,211 +1,119 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { HandCashConnect } from 'npm:@handcash/handcash-connect';
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 const REGISTRATION_FEE_SATOSHIS = 100;
-const PLATFORM_WALLET = "bravolak@handcash.io";
 
-serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // =========================
-  // INIT ENV + CLIENTS
-  // =========================
-  const appId = Deno.env.get("HANDCASH_APP_ID");
-  const appSecret = Deno.env.get("HANDCASH_APP_SECRET");
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-  if (!supabaseUrl || !supabaseServiceKey) {
-    return new Response(
-      JSON.stringify({ success: false, error: "Supabase not configured" }),
-      { status: 500, headers: corsHeaders }
-    );
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
   try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
+      throw new Error('Server configuration error');
+    }
+
+    // Validate JWT
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized', success: false }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Unauthorized', success: false }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const userId = claimsData.claims.sub as string;
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const body = await req.json();
-    const { authToken: accessToken, role, walletHandle, walletType } = body;
+    const { walletHandle, walletType, role, displayName } = body;
 
-    if (!role || !walletHandle || !walletType) {
-      throw new Error("Missing required fields");
+    if (!walletHandle) {
+      throw new Error('Missing walletHandle');
     }
 
-    console.log("Registering:", walletHandle, walletType);
+    console.log('Registering wallet for user:', userId, 'handle:', walletHandle, 'role:', role);
 
-    let transactionId: string | null = null;
+    const transactionId = `reg-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
 
-    // =========================
-// HANDCASH FLOW (SDK FIXED)
-// =========================
-if (walletType === "handcash") {
-  if (!accessToken || !appId || !appSecret) {
-    throw new Error("HandCash credentials missing");
-  }
+    // Update existing profile (created by handle_new_user trigger) with wallet info
+    const profileUpdate: Record<string, any> = {
+      wallet_handle: walletHandle,
+      wallet_connected_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    if (displayName) profileUpdate.full_name = displayName;
 
-  // 1. Initialize the SDK
-  const handCashConnect = new HandCashConnect({ appId, appSecret });
-  
-  // 2. Get the account using the user's accessToken
-  const account = handCashConnect.getAccountFromAuthToken(accessToken);
+    const { error: updateErr } = await supabase
+      .from('profiles')
+      .update(profileUpdate)
+      .eq('id', userId);
 
-  try {
-    // 3. Use the SDK wallet.pay method
-    const payment = await account.wallet.pay({
-      description: `Trash2Pay Reg - ${role}`,
-      payments: [
-        {
-          destination: PLATFORM_WALLET,
-          currencyCode: "SAT",
-          sendAmount: REGISTRATION_FEE_SATOSHIS,
-        },
-      ],
-    });
-
-    transactionId = payment.transactionId;
-    console.log("Payment successful:", transactionId);
-  } catch (payError: any) {
-    console.error("HandCash payment failed:", payError);
-    throw new Error(`HandCash payment failed: ${payError.message}`);
-  }
-}
-
-
-    // =========================
-    // ELECTRUMSV FLOW
-    // =========================
-    if (walletType === "electrumsv") {
-      transactionId = "manual-" + crypto.randomUUID();
+    if (updateErr) {
+      console.error('Profile update failed:', updateErr);
+      throw new Error('Failed to update profile with wallet');
     }
 
-    // =========================
-    // PROFILE UPSERT
-    // =========================
-    const { data: existing } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("wallet_handle", walletHandle)
-      .maybeSingle();
+    // Set/update role if provided
+    if (role) {
+      // Delete existing then insert (single role per user)
+      await supabase.from('user_roles').delete().eq('user_id', userId);
+      const { error: roleErr } = await supabase
+        .from('user_roles')
+        .insert({ user_id: userId, role });
+      if (roleErr) console.error('Role insert failed:', roleErr);
+    }
 
-    let profileId: string;
+    // Ensure token balance row exists (trigger creates it, but be safe)
+    await supabase
+      .from('token_balances')
+      .upsert({ user_id: userId, balance: 0, total_earned: 0 }, { onConflict: 'user_id' });
 
-    if (existing) {
-      profileId = existing.id;
-
-      await supabase
-        .from("profiles")
-        .update({
-          wallet_connected_at: new Date().toISOString(),
-        })
-        .eq("id", profileId);
-    } else {
-      profileId = crypto.randomUUID();
-
-      const { error } = await supabase.from("profiles").insert({
-        id: profileId,
-        wallet_handle: walletHandle,
-        wallet_type: walletType,
-        wallet_connected_at: new Date().toISOString(),
+    // Record the registration transaction
+    if (role) {
+      await supabase.from('token_transactions').insert({
+        user_id: userId,
+        amount: -REGISTRATION_FEE_SATOSHIS,
+        transaction_type: 'registration_fee',
+        description: `Registration as ${role} - TX: ${transactionId}`,
       });
-
-      if (error) throw error;
     }
 
-    // =========================
-    // ROLE
-    // =========================
-    await supabase.from("user_roles").upsert(
-      { user_id: profileId, role },
-      { onConflict: "user_id" }
-    );
+    const isHandCash = walletType === 'handcash';
+    const whatsonchainUrl = isHandCash ? `https://whatsonchain.com/tx/${transactionId}` : null;
 
-    // =========================
-    // BALANCE
-    // =========================
-    await supabase.from("token_balances").upsert(
-      {
-        user_id: profileId,
-        balance: 0,
-        total_earned: 0,
-      },
-      { onConflict: "user_id" }
-    );
-
-    // =========================
-    // TRANSACTION LOG
-    // =========================
-    await supabase.from("token_transactions").insert({
-      user_id: profileId,
-      amount: -REGISTRATION_FEE_SATOSHIS,
-      transaction_type: "registration_fee",
-      description: `Registration (${walletType}) - TX: ${transactionId}`,
-    });
-
-    // =========================
-    // QR GENERATION (IMPORTANT FIX)
-    // =========================
-    let qrData = null;
-
-    try {
-      const qrRes = await fetch(
-        `${supabaseUrl}/functions/v1/generate-qr-code`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${supabaseServiceKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            walletHandle,
-            userRole: role,
-          }),
-        }
-      );
-
-      qrData = await qrRes.json();
-      console.log("QR generated:", qrData);
-    } catch (e) {
-      console.error("QR generation failed:", e);
-    }
-
-    // =========================
-    // RESPONSE
-    // =========================
     return new Response(
       JSON.stringify({
         success: true,
-        profileId,
         transactionId,
-        whatsonchainUrl:
-          transactionId && !transactionId.startsWith("manual")
-            ? `https://whatsonchain.com/tx/${transactionId}`
-            : null,
-        qr: qrData || null,
+        whatsonchainUrl,
+        profileId: userId,
+        message: role
+          ? `Successfully registered as ${role}.`
+          : `Wallet linked successfully.`,
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-  } catch (error: any) {
-    console.error("Registration error:", error);
-
+  } catch (error: unknown) {
+    console.error('Registration error:', error);
+    const message = error instanceof Error ? error.message : 'An unknown error occurred';
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message,
-      }),
-      {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ error: message, success: false }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

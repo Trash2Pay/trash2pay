@@ -78,17 +78,26 @@ const CollectorContent = () => {
   };
 
   const getWasteTypeColor = (type: string) => {
-    switch (type) {
-      case "Recyclables":
-        return "bg-primary/10 text-primary border-primary/20";
-      case "E-Waste":
-        return "bg-eco-gold/10 text-eco-gold border-eco-gold/20";
-      case "Organic":
-        return "bg-eco-leaf/10 text-eco-leaf border-eco-leaf/20";
-      default:
-        return "bg-muted text-muted-foreground border-border";
-    }
-  };
+  switch (type) {
+    case "Recyclables":
+      return "bg-primary/10 text-primary border-primary/20";
+
+    case "E-Waste":
+      return "bg-eco-gold/10 text-eco-gold border-eco-gold/20";
+
+    case "Organic":
+      return "bg-eco-leaf/10 text-eco-leaf border-eco-leaf/20";
+
+    case "Hazardous":
+      return "bg-destructive/10 text-destructive border-destructive/20";
+
+    case "General Waste":
+      return "bg-muted text-muted-foreground border-border";
+
+    default:
+      return "bg-muted text-muted-foreground border-border";
+  }
+};
 
   return (
     <div className="min-h-screen bg-background">

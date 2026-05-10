@@ -38,7 +38,7 @@ const RoleSelection = () => {
     }
   }, [userRole, navigate]);
 
-  // Redirect to home if not connected
+  // Redirect to auth if not signed in, or home if no wallet
   useEffect(() => {
     if (!isConnected) {
       navigate('/');
@@ -51,8 +51,8 @@ const RoleSelection = () => {
       return;
     }
 
-    const accessToken = localStorage.getItem('handcash_access_token');
-    if (!accessToken && walletProfile.walletType === 'handcash') {
+    const authToken = localStorage.getItem('handcash_auth_token');
+    if (!authToken && walletProfile.walletType === 'handcash') {
       toast.error('Please reconnect your HandCash wallet');
       return;
     }
@@ -65,7 +65,7 @@ const RoleSelection = () => {
 
       const { data, error } = await supabase.functions.invoke('register-user', {
         body: {
-          authToken: walletProfile.walletType === 'handcash' ? accessToken : null,
+          authToken: walletProfile.walletType === 'handcash' ? authToken : null,
           role,
           walletHandle: walletProfile.handle,
           walletType: walletProfile.walletType,
@@ -74,7 +74,6 @@ const RoleSelection = () => {
 
       if (error) throw error;
       if (!data.success) throw new Error(data.error || 'Registration failed');
-      localStorage.setItem('user_id', data.profileId);
 
       // Store transaction result
       setTransactionResult({

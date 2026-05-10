@@ -67,32 +67,23 @@ const CollectorContent = () => {
 
   const handlePickupVerified = async (pickupData: any, reward: number) => {
     const collectorReward = Math.round(reward * 0.3);
-    await refreshBalance();
+    setCollectorTokens((prev) => prev + collectorReward);
     if (selectedRequest) {
-      try { await completePickup(selectedRequest.id); } catch (e) { console.error(e); }
+      try { await completePickup(selectedRequest.id, reward); } catch (e) { console.error(e); }
     }
     toast({
       title: "Pickup Verified! 🎉",
       description: `You earned ${collectorReward} T2P Units!`,
     });
   };
-const { data: pickup } = await supabase
-  .from("pickups")
-  .select("waste_type, weight_kg")
-  .eq("id", pickupId)
-  .single();
 
-const reward =
-  (rewardMap[pickup.waste_type] || 5) *
-  (pickup.weight_kg || 1);
-
-  const getWasteTypeColor(request.waste_type) => {
+  const getWasteTypeColor = (type: string) => {
     switch (type) {
-      case "recyclable":
+      case "Recyclables":
         return "bg-primary/10 text-primary border-primary/20";
-      case "electronic":
+      case "E-Waste":
         return "bg-eco-gold/10 text-eco-gold border-eco-gold/20";
-      case "organic":
+      case "Organic":
         return "bg-eco-leaf/10 text-eco-leaf border-eco-leaf/20";
       default:
         return "bg-muted text-muted-foreground border-border";

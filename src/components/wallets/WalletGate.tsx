@@ -81,7 +81,7 @@ export const WalletGate: React.FC<WalletGateProps> = ({ children, requiredRole }
           </h1>
 
           <p className="text-lg text-muted-foreground mb-8">
-            You're signed in! Now connect a BSV wallet to receive T2C token rewards.
+            You're signed in! Now connect a BSV wallet to receive T2P Unit rewards.
           </p>
 
           <Button size="lg" onClick={() => setShowModal(true)} disabled={isConnecting}
@@ -97,7 +97,7 @@ export const WalletGate: React.FC<WalletGateProps> = ({ children, requiredRole }
                   <Coins className="w-6 h-6 text-primary" />
                 </div>
                 <h3 className="font-semibold mb-2">Earn Tokens</h3>
-                <p className="text-sm text-muted-foreground">Receive T2C tokens directly to your wallet for every pickup</p>
+                <p className="text-sm text-muted-foreground">Receive T2P Units directly to your wallet for every pickup</p>
               </CardContent>
             </Card>
             <Card className="gradient-card border-border/50">

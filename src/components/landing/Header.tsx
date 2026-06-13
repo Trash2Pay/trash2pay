@@ -13,9 +13,11 @@ const Header = () => {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 rounded-xl gradient-eco flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Leaf className="w-6 h-6 text-primary-foreground" />
-            </div>
+            <img
+    src="/Trash2pay.png"
+    alt="Trash2Pay Logo"
+    className="w-12 h-12 object-contain group-hover:scale-110 transition-transform"
+  />
             <span className="text-xl font-bold text-gradient-eco">Trash2Pay</span>
           </Link>
 

@@ -9,9 +9,11 @@ const Footer = () => {
           {/* Brand */}
           <div className="md:col-span-1">
             <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-xl gradient-eco flex items-center justify-center">
-                <Leaf className="w-6 h-6 text-primary-foreground" />
-              </div>
+              <img
+      src="/Trash2pay.png"
+      alt="Trash2Pay Logo"
+      className="w-12 h-12 object-contain"
+    />
               <span className="text-xl font-bold text-gradient-eco">Trash2Pay</span>
             </Link>
             <p className="text-muted-foreground text-sm leading-relaxed">
@@ -90,7 +92,7 @@ const Footer = () => {
               </a>
             </div>
             <p className="text-muted-foreground text-sm">
-              support@trash2pay.io
+              support@trash2pay.com
             </p>
           </div>
         </div>

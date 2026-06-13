@@ -11,9 +11,13 @@ const CTA = () => {
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="w-20 h-20 rounded-2xl gradient-eco flex items-center justify-center mx-auto mb-8 animate-float">
-            <Leaf className="w-10 h-10 text-primary-foreground" />
-          </div>
+          <div className="mx-auto mb-8 animate-float">
+  <img
+    src="/Trash2pay.png"
+    alt="Trash2Pay Logo"
+    className="w-28 h-28 object-contain mx-auto drop-shadow-[0_0_25px_rgba(34,197,94,0.4)]"
+  />
+</div>
 
           <h2 className="text-3xl md:text-5xl font-bold mb-6">
             Ready to Turn Your

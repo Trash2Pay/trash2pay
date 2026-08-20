@@ -53,6 +53,7 @@ serve(async (req) => {
     // Update existing profile (created by handle_new_user trigger) with wallet info
     const profileUpdate: Record<string, any> = {
       wallet_handle: walletHandle,
+      wallet_type: walletType,
       wallet_connected_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };

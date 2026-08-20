@@ -60,7 +60,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     (async () => {
       const [{ data: profile }, { data: roleRow }] = await Promise.all([
-        supabase.from('profiles').select('wallet_handle, full_name, avatar_url').eq('id', user.id).maybeSingle(),
+        supabase.from('profiles').select('wallet_handle, wallet_type, full_name, avatar_url').eq('id', user.id).maybeSingle(),
         supabase.from('user_roles').select('role').eq('user_id', user.id).maybeSingle(),
       ]);
 
@@ -77,7 +77,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           handle: profile.wallet_handle,
           displayName: profile.full_name || profile.wallet_handle,
           avatarUrl: profile.avatar_url || undefined,
-          walletType,
+          walletType: profile.wallet_type as walletType,
         });
         setIsConnected(true);
       } else {

@@ -150,8 +150,12 @@ const getStatusBadge = (status: string) => {
                 </Link>
               </Button>
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg gradient-eco flex items-center justify-center">
-                  <Leaf className="w-5 h-5 text-primary-foreground" />
+                <div className="mx-auto mb-8 animate-float">
+                  <img
+      src="/Trash2pay.png"
+      alt="Trash2Pay Logo"
+      className="w-12 h-12 object-contain"
+    />
                 </div>
                 <span className="font-bold text-gradient-eco">Trash2Pay</span>
               </div>

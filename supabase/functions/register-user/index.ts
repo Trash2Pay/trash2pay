@@ -58,16 +58,34 @@ serve(async (req) => {
       updated_at: new Date().toISOString(),
     };
     if (displayName) profileUpdate.full_name = displayName;
+    
+  const { data: existing } = await supabase
+  .from('profiles')
+  .select('id')
+  .eq('wallet_handle', walletHandle)
+  .maybeSingle();
+
+if (existing && existing.id !== userId) {
+  throw new Error(
+    'This wallet is already linked to another account.'
+  );
+}
 
     const { error: updateErr } = await supabase
-      .from('profiles')
-      .update(profileUpdate)
-      .eq('id', userId);
+  .from('profiles')
+  .update(profileUpdate)
+  .eq('id', userId);
 
-    if (updateErr) {
-      console.error('Profile update failed:', updateErr);
-      throw new Error('Failed to update profile with wallet');
-    }
+if (updateErr) {
+  if (updateErr.code === '23505') {
+    throw new Error(
+      'This wallet is already linked to another account.'
+    );
+  }
+
+  console.error('Profile update failed:', updateErr);
+  throw new Error('Failed to update profile with wallet');
+}
 
     // Set/update role if provided
     if (role) {
